@@ -9,6 +9,7 @@
 #include "Material.h"
 #include "Scene.h"
 #include "Utils.h"
+#include <iostream>
 
 using namespace dae;
 
@@ -19,6 +20,7 @@ Renderer::Renderer(SDL_Window * pWindow) :
 	//Initialize
 	SDL_GetWindowSize(pWindow, &m_Width, &m_Height);
 	m_pBufferPixels = static_cast<uint32_t*>(m_pBuffer->pixels);
+	m_AspectRatio = static_cast<float>(m_Width) / static_cast<float>(m_Height);
 }
 
 void Renderer::Render(Scene* pScene) const
@@ -31,11 +33,22 @@ void Renderer::Render(Scene* pScene) const
 	{
 		for (int py{}; py < m_Height; ++py)
 		{
-			float gradient = px / static_cast<float>(m_Width);
-			gradient += py / static_cast<float>(m_Width);
-			gradient /= 2.0f;
+			const float cx{ ((2.0f * (px + 0.5f) / m_Width) - 1) * m_AspectRatio };
+			const float cy{ 1 - (2 * (py + 0.5f) / m_Height) };
 
-			ColorRGB finalColor{ gradient, gradient, gradient };
+			Vector3 rayDirection = cx * Vector3::UnitX + cy * Vector3::UnitY + Vector3::UnitZ;
+			rayDirection.Normalize();
+
+			Ray viewRay{ {0,0,0}, rayDirection };
+			ColorRGB finalColor{};
+
+			HitRecord closestHit{};
+			pScene->GetClosestHit(viewRay, closestHit);
+
+			if (closestHit.didHit)
+			{
+				finalColor = materials[closestHit.materialIndex]->Shade();
+			}
 
 			//Update Color in Buffer
 			finalColor.MaxToOne();
