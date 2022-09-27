@@ -28,18 +28,21 @@ void Renderer::Render(Scene* pScene) const
 	Camera& camera = pScene->GetCamera();
 	auto& materials = pScene->GetMaterials();
 	auto& lights = pScene->GetLights();
+	const Matrix cameraToWorld = camera.CalculateCameraToWorld();
 
 	for (int px{}; px < m_Width; ++px)
 	{
 		for (int py{}; py < m_Height; ++py)
 		{
-			const float cx{ ((2.0f * (px + 0.5f) / m_Width) - 1) * m_AspectRatio };
-			const float cy{ 1 - (2 * (py + 0.5f) / m_Height) };
+			const float cx{ ((2.0f * (px + 0.5f) / static_cast<float>(m_Width)) - 1) * m_AspectRatio * camera.fov };
+			const float cy{ (1 - (2 * (py + 0.5f) / static_cast<float>(m_Height))) * camera.fov};
 
-			Vector3 rayDirection = cx * Vector3::UnitX + cy * Vector3::UnitY + Vector3::UnitZ;
+			Vector3 rayDirection = { cx, cy, 1.f };
 			rayDirection.Normalize();
+			 
+			rayDirection = cameraToWorld.TransformVector(rayDirection);
 
-			Ray viewRay{ {0,0,0}, rayDirection };
+			Ray viewRay{ camera.origin, rayDirection };
 			ColorRGB finalColor{};
 
 			HitRecord closestHit{};

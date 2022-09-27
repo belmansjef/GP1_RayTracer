@@ -17,43 +17,43 @@ namespace dae
 			// to test the performance difference.
 			// RESULTS: Analytic hovers around 260 FPS in release mode, geometric hovers around 305 FPS in release mode.
 
-			////setup quadric equation from combined formula of ray and sphere
-			////-> t^2 (rayDir * rayDir) + t(2rayDir * (originRay - originSphere)) + ((originRay - originSphere) * (originRay - originSphere)) - radius^2 = 0
-			//float A = Vector3::Dot(ray.direction, ray.direction);
-			//float B = Vector3::Dot(2 * ray.direction, (ray.origin - sphere.origin));
-			//float C = Vector3::Dot((ray.origin - sphere.origin), (ray.origin - sphere.origin)) - (sphere.radius * sphere.radius);
+			hitRecord.didHit = false;
 
-			//float discriminant{ (B * B) - (4 * A * C) };
+			float A = Vector3::Dot(ray.direction, ray.direction);
+			float B = Vector3::Dot(2 * ray.direction, (ray.origin - sphere.origin));
+			float C = Vector3::Dot((ray.origin - sphere.origin), (ray.origin - sphere.origin)) - (sphere.radius * sphere.radius);
 
-			//if (discriminant > 0) //full intersection
-			//{
-			//	if (discriminant > ray.min && discriminant <= ray.max)
-			//	{
-			//		float tPlus = (-B + std::sqrtf(discriminant)) / (2 * A);
-			//		float tMinus = (-B - std::sqrtf(discriminant)) / (2 * A);
+			float discriminant{ (B * B) - (4 * A * C) };
 
-			//		tMinus < ray.min
-			//			? hitRecord.t = tPlus
-			//			: hitRecord.t = tMinus;
+			if (discriminant < 0) return false;
 
-			//		hitRecord.origin = ray.origin + (hitRecord.t * ray.direction);
-			//		hitRecord.materialIndex = sphere.materialIndex;
-			//		hitRecord.didHit = true;
-			//		return true;
-			//	}
-			//}
-			//else
-			//{
-			//	return false;
-			//} 
+			float sqrtDiscriminant = std::sqrtf(discriminant);
+			float t = (-B - sqrtDiscriminant) / (2 * A);
+
+			if(t < ray.min)
+			{
+				t = (-B + sqrtDiscriminant) / (2 * A);
+			}
+
+			if(t >= ray.min && t <= ray.max)
+			{
+				hitRecord.origin = ray.origin + (hitRecord.t * ray.direction);
+				hitRecord.t = t;
+				hitRecord.normal = ray.origin - hitRecord.origin;
+				hitRecord.materialIndex = sphere.materialIndex;
+				hitRecord.didHit = true;
+				return true;
+			}
+
+			return false;
 
 			// Using "tcLength * tcLength" instead of "powf(tcLength, 2.0f)" more than doubles performance
-			Vector3 tc = sphere.origin - ray.origin;
+			/*Vector3 tc = sphere.origin - ray.origin;
 			float tpLength = Vector3::Dot(tc, ray.direction);
 			float tcLength = tc.Magnitude();
 			float odLength = tcLength * tcLength - tpLength * tpLength;
 
-			// Ray intersects with sphere
+			 Ray intersects with sphere
 			if (odLength <= sphere.radius * sphere.radius)
 			{
 				float ipLength = sqrtf(sphere.radius * sphere.radius - odLength);
@@ -68,7 +68,7 @@ namespace dae
 			}
 		
 			hitRecord.didHit = false;
-			return false;
+			return false;*/
 		}
 
 		inline bool HitTest_Sphere(const Sphere& sphere, const Ray& ray)
@@ -85,6 +85,9 @@ namespace dae
 			
 			if (t <= ray.max && t >= ray.min)
 			{
+				if (ignoreHitRecord)
+					return false;
+
 				hitRecord.didHit = true;
 				hitRecord.materialIndex = plane.materialIndex;
 				hitRecord.t = t;
