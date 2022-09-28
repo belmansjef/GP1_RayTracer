@@ -38,9 +38,8 @@ void Renderer::Render(Scene* pScene) const
 			const float cy{ (1 - (2 * (py + 0.5f) / static_cast<float>(m_Height))) * camera.fov};
 
 			Vector3 rayDirection = { cx, cy, 1.f };
-			rayDirection.Normalize();
-			 
-			rayDirection = cameraToWorld.TransformVector(rayDirection);
+			// rayDirection.Normalize(); // Decreases performance during W2 with about 5 FPS and has no visual impact
+			rayDirection = cameraToWorld.TransformVector(rayDirection).Normalized();
 
 			Ray viewRay{ camera.origin, rayDirection };
 			ColorRGB finalColor{};

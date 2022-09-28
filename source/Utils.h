@@ -12,63 +12,35 @@ namespace dae
 		//SPHERE HIT-TESTS
 		inline bool HitTest_Sphere(const Sphere& sphere, const Ray& ray, HitRecord& hitRecord, bool ignoreHitRecord = false)
 		{
-
-			// NOTE: Below is Sacha Gonzalez's code for backtesting his analytic solution against my geometric solution
-			// to test the performance difference.
-			// RESULTS: Analytic hovers around 260 FPS in release mode, geometric hovers around 305 FPS in release mode.
-
+			// Using "tcLength * tcLength" instead of "powf(tcLength, 2.0f)" more than doubles performance
 			hitRecord.didHit = false;
 
-			float A = Vector3::Dot(ray.direction, ray.direction);
-			float B = Vector3::Dot(2 * ray.direction, (ray.origin - sphere.origin));
-			float C = Vector3::Dot((ray.origin - sphere.origin), (ray.origin - sphere.origin)) - (sphere.radius * sphere.radius);
+			const Vector3 tc = sphere.origin - ray.origin;
+			const float tcl = tc.Magnitude();
+			const float dp = Vector3::Dot(tc, ray.direction);
+			const float odLength = tcl * tcl - dp * dp;
 
-			float discriminant{ (B * B) - (4 * A * C) };
-
-			if (discriminant < 0) return false;
-
-			float sqrtDiscriminant = std::sqrtf(discriminant);
-			float t = (-B - sqrtDiscriminant) / (2 * A);
-
-			if(t < ray.min)
+			// Ray intersects with sphere
+			if (odLength <= sphere.radius * sphere.radius)
 			{
-				t = (-B + sqrtDiscriminant) / (2 * A);
-			}
+				if (ignoreHitRecord) return true;
 
-			if(t >= ray.min && t <= ray.max)
-			{
-				hitRecord.origin = ray.origin + (hitRecord.t * ray.direction);
-				hitRecord.t = t;
-				hitRecord.normal = ray.origin - hitRecord.origin;
-				hitRecord.materialIndex = sphere.materialIndex;
-				hitRecord.didHit = true;
-				return true;
+				const float tca = sphere.radius - sqrtf(odLength);
+				const float distanceToIntersection = dp - tca;
+
+				if (distanceToIntersection >= ray.min && distanceToIntersection <= ray.max)
+				{
+					const Vector3 intersect{ ray.origin + distanceToIntersection * ray.direction };
+					hitRecord.didHit = true;
+					hitRecord.origin = intersect;
+					hitRecord.materialIndex = sphere.materialIndex;
+					hitRecord.t = distanceToIntersection;
+					hitRecord.normal = hitRecord.origin - ray.origin;
+					return true;
+				}
 			}
 
 			return false;
-
-			// Using "tcLength * tcLength" instead of "powf(tcLength, 2.0f)" more than doubles performance
-			/*Vector3 tc = sphere.origin - ray.origin;
-			float tpLength = Vector3::Dot(tc, ray.direction);
-			float tcLength = tc.Magnitude();
-			float odLength = tcLength * tcLength - tpLength * tpLength;
-
-			 Ray intersects with sphere
-			if (odLength <= sphere.radius * sphere.radius)
-			{
-				float ipLength = sqrtf(sphere.radius * sphere.radius - odLength);
-				float distanceToIntersection = tpLength - ipLength;
-				Vector3 intersect{ ray.origin + distanceToIntersection * ray.direction };
-				
-				hitRecord.didHit = true;
-				hitRecord.materialIndex = sphere.materialIndex;
-				hitRecord.t = distanceToIntersection;
-
-				return true;
-			}
-		
-			hitRecord.didHit = false;
-			return false;*/
 		}
 
 		inline bool HitTest_Sphere(const Sphere& sphere, const Ray& ray)
