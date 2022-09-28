@@ -5,7 +5,7 @@
 
 #include "Math.h"
 #include "Timer.h"
-#include <iostream>
+#include <algorithm>
 
 namespace dae
 {
@@ -24,6 +24,8 @@ namespace dae
 		const float lookSpeed{ 0.25f };
 
 		Vector3 origin{};
+		const float maxFovAngle{ 120.f };
+		const float minFovAngle{ 45.f };
 		float fovAngle{90.f};
 		float fov{};
 
@@ -77,18 +79,22 @@ namespace dae
 			}
 			
 			if (mouseState & SDL_BUTTON_LMASK || mouseState & SDL_BUTTON_RMASK)
-			{
-				const Matrix pitch{ Matrix::CreateRotationX(totalPitch) };
-				const Matrix yaw{ Matrix::CreateRotationY(totalYaw) };
-				const Matrix finalRotation{ pitch * yaw };
-				forward = finalRotation.TransformVector(Vector3::UnitZ);
-				forward.Normalize();
-			}
+				CalculateLookRotation();
 		}
 
 		float CalculateFov()
 		{
+			fovAngle = std::clamp(fovAngle, minFovAngle, maxFovAngle);
 			return fov = tanf(fovAngle / 2.f);
+		}
+
+		void CalculateLookRotation()
+		{
+			const Matrix pitch{ Matrix::CreateRotationX(totalPitch) };
+			const Matrix yaw{ Matrix::CreateRotationY(totalYaw) };
+			const Matrix finalRotation{ pitch * yaw };
+			forward = finalRotation.TransformVector(Vector3::UnitZ);
+			forward.Normalize();
 		}
 	};
 }

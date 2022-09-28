@@ -12,35 +12,68 @@ namespace dae
 		//SPHERE HIT-TESTS
 		inline bool HitTest_Sphere(const Sphere& sphere, const Ray& ray, HitRecord& hitRecord, bool ignoreHitRecord = false)
 		{
-			// Using "tcLength * tcLength" instead of "powf(tcLength, 2.0f)" more than doubles performance
 			hitRecord.didHit = false;
 
-			const Vector3 tc = sphere.origin - ray.origin;
-			const float tcl = tc.Magnitude();
-			const float dp = Vector3::Dot(tc, ray.direction);
-			const float odLength = tcl * tcl - dp * dp;
+			const float A = Vector3::Dot(ray.direction, ray.direction);
+			const float B = Vector3::Dot(2 * ray.direction, (ray.origin - sphere.origin));
+			const float C = Vector3::Dot((ray.origin - sphere.origin), (ray.origin - sphere.origin)) - (sphere.radius * sphere.radius);
 
-			// Ray intersects with sphere
-			if (odLength <= sphere.radius * sphere.radius)
+			const float discriminant{ (B * B) - (4 * A * C) };
+
+			if (discriminant < 0) return false;
+
+			const float sqrtDiscriminant = std::sqrtf(discriminant);
+			float t = (-B - sqrtDiscriminant) / (2 * A);
+
+			if (t < ray.min)
+			{
+				t = (-B + sqrtDiscriminant) / (2 * A);
+			}
+
+			if (t >= ray.min && t <= ray.max)
 			{
 				if (ignoreHitRecord) return true;
 
-				const float tca = sphere.radius - sqrtf(odLength);
-				const float distanceToIntersection = dp - tca;
-
-				if (distanceToIntersection >= ray.min && distanceToIntersection <= ray.max)
-				{
-					const Vector3 intersect{ ray.origin + distanceToIntersection * ray.direction };
-					hitRecord.didHit = true;
-					hitRecord.origin = intersect;
-					hitRecord.materialIndex = sphere.materialIndex;
-					hitRecord.t = distanceToIntersection;
-					hitRecord.normal = hitRecord.origin - ray.origin;
-					return true;
-				}
+				hitRecord.didHit = true;
+				hitRecord.materialIndex = sphere.materialIndex;
+				hitRecord.t = t;
+				hitRecord.origin = ray.origin + (hitRecord.t * ray.direction);
+				hitRecord.normal = (ray.origin - hitRecord.origin).Normalized();
+				
+				return true;
 			}
 
 			return false;
+
+			// Using "tcLength * tcLength" instead of "powf(tcLength, 2.0f)" more than doubles performance
+			//hitRecord.didHit = false;
+
+			//const Vector3 tc = sphere.origin - ray.origin;
+			//const float tcl = tc.Magnitude();
+			//const float dp = Vector3::Dot(tc, ray.direction);
+			//const float odLength = tcl * tcl - dp * dp;
+
+			//// Ray intersects with sphere
+			//if (odLength <= sphere.radius * sphere.radius)
+			//{
+			//	if (ignoreHitRecord) return true;
+
+			//	const float tca = sphere.radius - sqrtf(odLength);
+			//	const float distanceToIntersection = dp - tca;
+
+			//	if (distanceToIntersection >= ray.min && distanceToIntersection <= ray.max)
+			//	{
+			//		const Vector3 intersect{ ray.origin + distanceToIntersection * ray.direction };
+			//		hitRecord.didHit = true;
+			//		hitRecord.origin = intersect;
+			//		hitRecord.materialIndex = sphere.materialIndex;
+			//		hitRecord.t = distanceToIntersection;
+			//		hitRecord.normal = hitRecord.origin - ray.origin;
+			//		return true;
+			//	}
+			//}
+
+			//return false;
 		}
 
 		inline bool HitTest_Sphere(const Sphere& sphere, const Ray& ray)
@@ -53,20 +86,22 @@ namespace dae
 		//PLANE HIT-TESTS
 		inline bool HitTest_Plane(const Plane& plane, const Ray& ray, HitRecord& hitRecord, bool ignoreHitRecord = false)
 		{
+			hitRecord.didHit = false;
 			const float t = (Vector3::Dot((plane.origin - ray.origin), plane.normal)) / Vector3::Dot(ray.direction, plane.normal);
 			
 			if (t <= ray.max && t >= ray.min)
 			{
-				if (ignoreHitRecord)
-					return false;
+				if (ignoreHitRecord) return true;
 
 				hitRecord.didHit = true;
 				hitRecord.materialIndex = plane.materialIndex;
 				hitRecord.t = t;
+				hitRecord.origin = ray.origin + (hitRecord.t * ray.direction);
+				hitRecord.normal = plane.normal;
+
 				return true;
 			}
 
-			hitRecord.didHit = false;
 			return false;
 		}
 
@@ -110,11 +145,9 @@ namespace dae
 	namespace LightUtils
 	{
 		//Direction from target to light
-		inline Vector3 GetDirectionToLight(const Light& light, const Vector3 origin)
+		inline Vector3 GetDirectionToLight(const Light& light, const Vector3& origin)
 		{
-			//todo W3
-			assert(false && "No Implemented Yet!");
-			return {};
+			return light.origin - origin;
 		}
 
 		inline ColorRGB GetRadiance(const Light& light, const Vector3& target)
