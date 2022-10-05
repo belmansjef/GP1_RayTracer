@@ -25,7 +25,7 @@ namespace dae
 
 		Vector3 origin{};
 		const float maxFovAngle{ 120.f };
-		const float minFovAngle{ 45.f };
+		const float minFovAngle{ 30.f };
 		float fovAngle{90.f};
 		float fov{};
 
@@ -85,6 +85,7 @@ namespace dae
 		float CalculateFov()
 		{
 			fovAngle = std::clamp(fovAngle, minFovAngle, maxFovAngle);
+			fovAngle *= TO_RADIANS;
 			return fov = tanf(fovAngle / 2.f);
 		}
 

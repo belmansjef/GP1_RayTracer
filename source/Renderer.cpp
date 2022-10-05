@@ -38,7 +38,6 @@ void Renderer::Render(Scene* pScene) const
 			const float cy{ (1 - (2 * (py + 0.5f) / static_cast<float>(m_Height))) * camera.fov};
 
 			Vector3 rayDirection = { cx, cy, 1.f };
-			// rayDirection.Normalize(); // Decreases performance during W2 with about 5 FPS and has no visual impact
 			rayDirection = cameraToWorld.TransformVector(rayDirection).Normalized();
 
 			Ray viewRay{ camera.origin, rayDirection };
@@ -49,20 +48,38 @@ void Renderer::Render(Scene* pScene) const
 
 			if (closestHit.didHit)
 			{
-				finalColor = materials[closestHit.materialIndex]->Shade();
-
 				for (const Light& light : lights)
 				{
-					Ray hitTowardsLightRay{};
-					hitTowardsLightRay.origin = closestHit.origin + closestHit.normal * 0.01f;
-					hitTowardsLightRay.direction = LightUtils::GetDirectionToLight(light, hitTowardsLightRay.origin);
-					hitTowardsLightRay.min = 0.0001f;
-					hitTowardsLightRay.max = hitTowardsLightRay.direction.Magnitude();
-					hitTowardsLightRay.direction.Normalize();
+					Ray lightRay{};
+					lightRay.origin = closestHit.origin;
+					lightRay.direction = LightUtils::GetDirectionToLight(light, lightRay.origin + closestHit.normal * 0.01f);
+					lightRay.min = 0.0001f;
+					lightRay.max = lightRay.direction.Magnitude();
+					lightRay.direction.Normalize();
 
-					if (pScene->DoesHit(hitTowardsLightRay))
+					if ((m_ShadowsEnabled && pScene->DoesHit(lightRay))) continue;
+
+					const float dpObservedArea{ Vector3::Dot(closestHit.normal, lightRay.direction) };
+
+					switch (m_CurrentLightingMode)
 					{
-						finalColor *= 0.5f;
+					case dae::Renderer::LightingMode::ObservedArea:
+						if (dpObservedArea < 0) continue;
+						finalColor += { dpObservedArea, dpObservedArea, dpObservedArea };
+						break;
+					case dae::Renderer::LightingMode::Radiance:
+						finalColor += LightUtils::GetRadiance(light, lightRay.origin);
+						break;
+					case dae::Renderer::LightingMode::BRDF:
+						finalColor += materials[closestHit.materialIndex]->Shade(closestHit, lightRay.direction, viewRay.direction);
+						break;
+					case dae::Renderer::LightingMode::Combined:
+						if (dpObservedArea < 0) continue;
+						finalColor += LightUtils::GetRadiance(light, lightRay.origin) * materials[closestHit.materialIndex]->Shade(closestHit, lightRay.direction, viewRay.direction) * dpObservedArea;
+						break;
+					default:
+						std::cout << "Error getting lighting mode!\n";
+						break;
 					}
 				}
 			}
@@ -85,4 +102,10 @@ void Renderer::Render(Scene* pScene) const
 bool Renderer::SaveBufferToImage() const
 {
 	return SDL_SaveBMP(m_pBuffer, "RayTracing_Buffer.bmp");
+}
+
+void dae::Renderer::CycleLightingMode()
+{
+	m_CurrentLightingMode = static_cast<LightingMode>(
+		(static_cast<int>(m_CurrentLightingMode) + 1) % 4);
 }

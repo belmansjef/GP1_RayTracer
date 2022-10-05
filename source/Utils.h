@@ -97,7 +97,7 @@ namespace dae
 				hitRecord.materialIndex = plane.materialIndex;
 				hitRecord.t = t;
 				hitRecord.origin = ray.origin + (hitRecord.t * ray.direction);
-				hitRecord.normal = plane.normal;
+				hitRecord.normal = plane.normal.Normalized();
 
 				return true;
 			}
@@ -153,8 +153,20 @@ namespace dae
 		inline ColorRGB GetRadiance(const Light& light, const Vector3& target)
 		{
 			//todo W3
-			assert(false && "No Implemented Yet!");
-			return {};
+			ColorRGB radiance{light.color};
+
+			switch (light.type)
+			{
+			case LightType::Point:
+				radiance *= light.intensity / (light.origin - target).SqrMagnitude();
+				break;
+			case LightType::Directional:
+				radiance *= light.intensity;
+				break;
+			default:
+				break;
+			}
+			return radiance;
 		}
 	}
 
