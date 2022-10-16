@@ -202,21 +202,8 @@ namespace dae {
 	void Scene_W3::Initialize()
 	{
 		m_Camera.origin = { 0.f, 3.f, -9.f };
-		// m_Camera.origin = { 0.f, 1.f, -5.f };
 		m_Camera.fovAngle = 45.f;
 		m_Camera.CalculateFov();
-		
-		/*const auto matLambert_Red = AddMaterial(new Material_Lambert{ colors::Red , 1.f });
-		const auto matLambertPhong_Blue = AddMaterial(new Material_LambertPhong{ colors::Blue , 1.f, 1.f, 20.f});
-		const auto matLambert_Yellow = AddMaterial(new Material_Lambert{ colors::Yellow, 1.f});
-
-		AddSphere({ -0.75f, 1.f, 0.f }, 1.f, matLambert_Red);
-		AddSphere({ 0.75f, 1.f, 0.f }, 1.f, matLambertPhong_Blue);
-
-		AddPlane({ 0.f, 0.f, 0.f }, { 0.f, 1.f, 0.f }, matLambert_Yellow);
-
-		AddPointLight({ 0.f, 5.f, 5.f }, 25.f, colors::White);
-		AddPointLight({ 0.f, 2.5f, -5.f }, 25.f, colors::White);*/
 
 		const auto matCT_GrayRoughMetal = AddMaterial(new Material_CookTorrence({ .972f, .960f, .915f }, 1.f, 1.f));
 		const auto matCT_GrayMediumMetal = AddMaterial(new Material_CookTorrence({ .972f, .960f, .915f }, 1.f, .6f));
