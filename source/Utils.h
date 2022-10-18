@@ -115,8 +115,16 @@ namespace dae
 		//TRIANGLE HIT-TESTS
 		inline bool HitTest_Triangle(const Triangle& triangle, const Ray& ray, HitRecord& hitRecord, bool ignoreHitRecord = false)
 		{
-			//todo W5
-			assert(false && "No Implemented Yet!");
+			const float rayDotNormal{ Vector3::Dot(ray.direction, triangle.normal) };
+			if (rayDotNormal == 0) {
+				return false;
+			}
+
+			if (rayDotNormal > 0 && triangle.cullMode == TriangleCullMode::FrontFaceCulling) {
+
+			}
+
+
 			return false;
 		}
 
