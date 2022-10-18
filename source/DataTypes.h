@@ -1,5 +1,6 @@
 #pragma once
 #include <cassert>
+#include <iostream>
 
 #include "Math.h"
 #include "vector"
@@ -123,20 +124,37 @@ namespace dae
 
 		void CalculateNormals()
 		{
-			assert(false && "No Implemented Yet!");
+			for (uint64_t index = 0; index < indices.size(); index += 3)
+			{
+				uint32_t i0 = indices[index];
+				uint32_t i1 = indices[index + 1];
+				uint32_t i2 = indices[index + 2];
+
+				Vector3 edgeV0V1 = positions[i1] - positions[i0];
+				Vector3 edgeV0V2 = positions[i2] - positions[i0];
+				Vector3 normal = Vector3::Cross(edgeV0V1, edgeV0V2);
+
+				normals.push_back(normal);
+			}
 		}
 
 		void UpdateTransforms()
 		{
-			assert(false && "No Implemented Yet!");
-			//Calculate Final Transform 
-			//const auto finalTransform = ...
+			const Matrix finalTransform = scaleTransform * rotationTransform * translationTransform;
 
-			//Transform Positions (positions > transformedPositions)
-			//...
+			transformedPositions.clear();
+			transformedPositions.reserve(positions.size());
+			for (const auto pos : positions)
+			{
+				transformedPositions.emplace_back(finalTransform.TransformPoint(pos));
+			}
 
-			//Transform Normals (normals > transformedNormals)
-			//...
+			transformedNormals.clear();
+			transformedNormals.reserve(normals.size());
+			for (const auto normal : normals)
+			{
+				transformedNormals.emplace_back(finalTransform.TransformVector(normal));
+			}
 		}
 	};
 #pragma endregion
