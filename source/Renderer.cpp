@@ -6,6 +6,7 @@
 #include <iostream>
 #include <thread>
 #include <future> // All your async stuff
+#include <ppl.h>
  
 #include "Renderer.h"
 #include "Math.h"
@@ -13,7 +14,7 @@
 #include "Material.h"
 #include "Scene.h"
 #include "Utils.h"
-#include "ppl.h"
+
 
 using namespace dae;
 

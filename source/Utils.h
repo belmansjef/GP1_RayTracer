@@ -8,6 +8,30 @@ namespace dae
 {
 	namespace GeometryUtils
 	{
+#pragma region SlabTest
+		inline bool SlabTest_TriangleMesh(const TriangleMesh& mesh, const Ray& ray)
+		{
+			float tx1 = (mesh.transformedMinAABB.x - ray.origin.x) / ray.direction.x;
+			float tx2 = (mesh.transformedMaxAABB.x - ray.origin.x) / ray.direction.x;
+
+			float tmin = std::min(tx1, tx2);
+			float tmax = std::max(tx1, tx2);
+
+			float ty1 = (mesh.transformedMinAABB.y - ray.origin.y) / ray.direction.y;
+			float ty2 = (mesh.transformedMaxAABB.y - ray.origin.y) / ray.direction.y;
+
+			tmin = std::max(tmin, std::min(ty1, ty2));
+			tmax = std::min(tmax, std::max(ty1, ty2));
+
+			float tz1 = (mesh.transformedMinAABB.z - ray.origin.z) / ray.direction.z;
+			float tz2 = (mesh.transformedMaxAABB.z - ray.origin.z) / ray.direction.z;
+
+			tmin = std::max(tmin, std::min(tz1, tz2));
+			tmax = std::min(tmax, std::max(tz1, tz2));
+
+			return tmax > 0 && tmax >= tmin;
+		}
+#pragma endregion
 #pragma region Sphere HitTest
 		//SPHERE HIT-TESTS
 		inline bool HitTest_Sphere(const Sphere& sphere, const Ray& ray, HitRecord& hitRecord, bool ignoreHitRecord = false)
@@ -46,35 +70,41 @@ namespace dae
 
 			return false;
 
-			// Using "tcLength * tcLength" instead of "powf(tcLength, 2.0f)" more than doubles performance
-			//hitRecord.didHit = false;
+			/*hitRecord.didHit = false;
 
-			//const Vector3 tc = sphere.origin - ray.origin;
-			//const float tcl = tc.Magnitude();
-			//const float dp = Vector3::Dot(tc, ray.direction);
-			//const float odLength = tcl * tcl - dp * dp;
+			const Vector3 L = sphere.origin - ray.origin;
+			const float tca = Vector3::Dot(L, ray.direction);
+			if (tca < 0) return false;
 
-			//// Ray intersects with sphere
-			//if (odLength <= sphere.radius * sphere.radius)
-			//{
-			//	if (ignoreHitRecord) return true;
+			const float d2 = Vector3::Dot(L, L) - tca * tca;
+			if (d2 > sphere.radius * sphere.radius || d2 < 0) return false;
 
-			//	const float tca = sphere.radius - sqrtf(odLength);
-			//	const float distanceToIntersection = dp - tca;
+			const float thc = sqrt(sphere.radius * sphere.radius - d2);
+			float t0 = tca - thc;
+			float t1 = tca + thc;
 
-			//	if (distanceToIntersection >= ray.min && distanceToIntersection <= ray.max)
-			//	{
-			//		const Vector3 intersect{ ray.origin + distanceToIntersection * ray.direction };
-			//		hitRecord.didHit = true;
-			//		hitRecord.origin = intersect;
-			//		hitRecord.materialIndex = sphere.materialIndex;
-			//		hitRecord.t = distanceToIntersection;
-			//		hitRecord.normal = hitRecord.origin - ray.origin;
-			//		return true;
-			//	}
-			//}
+			if (t0 > t1) std::swap(t0, t1);
+			if (t0 < 0)
+			{
+				t0 = t1;
+				if (t0 < 0) return false;
+			}
 
-			//return false;
+			if (t0 < 0) return false;
+
+			if (t0 >= ray.min && t0 <= ray.max)
+			{
+				if (ignoreHitRecord) return true;
+				const Vector3 intersect{ ray.origin + t0 * ray.direction };
+				hitRecord.didHit = true;
+				hitRecord.origin = intersect;
+				hitRecord.materialIndex = sphere.materialIndex;
+				hitRecord.t = t0;
+				hitRecord.normal = (hitRecord.origin - sphere.origin).Normalized();
+				return true;
+			}
+
+			return false;*/
 		}
 
 		inline bool HitTest_Sphere(const Sphere& sphere, const Ray& ray)
@@ -171,15 +201,20 @@ namespace dae
 #pragma region TriangeMesh HitTest
 		inline bool HitTest_TriangleMesh(const TriangleMesh& mesh, const Ray& ray, HitRecord& hitRecord, bool ignoreHitRecord = false)
 		{
+			hitRecord.didHit = false;
+			if (!SlabTest_TriangleMesh(mesh, ray)) return false;
+
 			HitRecord temp{};
 			int normalIndex{ 0 };
+			Triangle triangle{};
+
 			for (uint64_t index = 0; index < mesh.indices.size(); index += 3)
 			{
 				uint32_t i0 = mesh.indices[index];
 				uint32_t i1 = mesh.indices[index + 1];
 				uint32_t i2 = mesh.indices[index + 2];
 
-				Triangle triangle =
+				triangle =
 				{
 					mesh.transformedPositions[i0],
 					mesh.transformedPositions[i1],
