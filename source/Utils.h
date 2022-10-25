@@ -14,9 +14,10 @@ namespace dae
 		{
 			hitRecord.didHit = false;
 
+			const Vector3 rayToShpere = ray.origin - sphere.origin;
 			const float A = Vector3::Dot(ray.direction, ray.direction);
-			const float B = Vector3::Dot(2 * ray.direction, (ray.origin - sphere.origin));
-			const float C = Vector3::Dot((ray.origin - sphere.origin), (ray.origin - sphere.origin)) - (sphere.radius * sphere.radius);
+			const float B = Vector3::Dot(2 * ray.direction, (rayToShpere));
+			const float C = Vector3::Dot((rayToShpere), (rayToShpere)) - (sphere.radius * sphere.radius);
 
 			const float discriminant{ (B * B) - (4 * A * C) };
 
@@ -37,7 +38,7 @@ namespace dae
 				hitRecord.didHit = true;
 				hitRecord.materialIndex = sphere.materialIndex;
 				hitRecord.t = t;
-				hitRecord.origin = ray.origin + (hitRecord.t * ray.direction);
+				hitRecord.origin = ray.origin + (t * ray.direction);
 				hitRecord.normal = (hitRecord.origin - sphere.origin).Normalized();
 
 				return true;
@@ -170,9 +171,39 @@ namespace dae
 #pragma region TriangeMesh HitTest
 		inline bool HitTest_TriangleMesh(const TriangleMesh& mesh, const Ray& ray, HitRecord& hitRecord, bool ignoreHitRecord = false)
 		{
-			//todo W5
-			assert(false && "No Implemented Yet!");
-			return false;
+			HitRecord temp{};
+			int normalIndex{ 0 };
+			for (uint64_t index = 0; index < mesh.indices.size(); index += 3)
+			{
+				uint32_t i0 = mesh.indices[index];
+				uint32_t i1 = mesh.indices[index + 1];
+				uint32_t i2 = mesh.indices[index + 2];
+
+				Triangle triangle =
+				{
+					mesh.transformedPositions[i0],
+					mesh.transformedPositions[i1],
+					mesh.transformedPositions[i2],
+					mesh.transformedNormals[normalIndex++]
+				};
+
+				triangle.cullMode = mesh.cullMode;
+				triangle.materialIndex = mesh.materialIndex;
+
+				if (GeometryUtils::HitTest_Triangle(triangle, ray, temp, ignoreHitRecord))
+				{
+					if(ignoreHitRecord) return true;
+					else
+					{
+						if (temp.t < hitRecord.t)
+						{
+							hitRecord = temp;
+						}
+					}
+				}
+			}
+
+			return hitRecord.didHit;
 		}
 
 		inline bool HitTest_TriangleMesh(const TriangleMesh& mesh, const Ray& ray)

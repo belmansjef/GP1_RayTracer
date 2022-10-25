@@ -53,30 +53,11 @@ namespace dae {
 
 		for (const TriangleMesh& triangleMesh : m_TriangleMeshGeometries)
 		{
-			int normalIndex{0};
-			for (uint64_t index = 0; index < triangleMesh.indices.size(); index += 3)
+			if (GeometryUtils::HitTest_TriangleMesh(triangleMesh, ray, temp))
 			{
-				uint32_t i0 = triangleMesh.indices[index];
-				uint32_t i1 = triangleMesh.indices[index + 1];
-				uint32_t i2 = triangleMesh.indices[index + 2];
-
-				Triangle triangle =
+				if (temp.t < closestHit.t)
 				{
-					triangleMesh.transformedPositions[i0],
-					triangleMesh.transformedPositions[i1],
-					triangleMesh.transformedPositions[i2],
-					triangleMesh.transformedNormals[normalIndex++]
-				};
-
-				triangle.cullMode = triangleMesh.cullMode;
-				triangle.materialIndex = triangleMesh.materialIndex;
-
-				if (GeometryUtils::HitTest_Triangle(triangle, ray, temp))
-				{
-					if (temp.t < closestHit.t)
-					{
-						closestHit = temp;
-					}
+					closestHit = temp;
 				}
 			}
 		}
@@ -103,28 +84,9 @@ namespace dae {
 
 		for (const TriangleMesh& triangleMesh : m_TriangleMeshGeometries)
 		{
-			int normalIndex{ 0 };
-			for (uint64_t index = 0; index < triangleMesh.indices.size(); index += 3)
+			if (GeometryUtils::HitTest_TriangleMesh(triangleMesh, ray))
 			{
-				uint32_t i0 = triangleMesh.indices[index];
-				uint32_t i1 = triangleMesh.indices[index + 1];
-				uint32_t i2 = triangleMesh.indices[index + 2];
-
-				Triangle triangle =
-				{
-					triangleMesh.transformedPositions[i0],
-					triangleMesh.transformedPositions[i1],
-					triangleMesh.transformedPositions[i2],
-					triangleMesh.transformedNormals[normalIndex++]
-				};
-
-				triangle.cullMode = triangleMesh.cullMode;
-				triangle.materialIndex = triangleMesh.materialIndex;
-
-				if (GeometryUtils::HitTest_Triangle(triangle, ray))
-				{
-					return true;
-				}
+				return true;
 			}
 		}
 

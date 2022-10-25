@@ -120,9 +120,11 @@ namespace dae
 				(D * F.g * G) / factorProjection,
 				(D * F.b * G) / factorProjection,
 			};
-
-			const float kd{ m_Metalness == 0.f ? 1 - f0.r : 0.f };
-
+			
+			const ColorRGB kd{ m_Metalness == 0.f ? ColorRGB(1.f - F.r, 1.f - F.g, 1.f - F.b) : ColorRGB(0.f, 0.f, 0.f)};
+			
+			// return F;
+			// return BRDF::Lambert(kd, m_Albedo);
 			return BRDF::Lambert(kd, m_Albedo) + ctSpecular;
 		}
 
