@@ -391,20 +391,28 @@ namespace dae {
 		AddPlane(Vector3{ 5.f, 0.f, 0.f }, Vector3{ -1.f, 0.f, 0.f }, matLambert_GrayBlue);; //Right
 		AddPlane(Vector3{ -5.f, 0.f, 0.f }, Vector3{ 1.f, 0.f, 0.f }, matLambert_GrayBlue);; //Left
 
-		auto bunny = AddTriangleMesh(TriangleCullMode::NoCulling, matLambert_White);
+		m_Bunny = AddTriangleMesh(TriangleCullMode::NoCulling, matLambert_White);
 		Utils::ParseOBJ("Resources/lowpoly_bunny2.obj",
-			bunny->positions,
-			bunny->normals,
-			bunny->indices);
+			m_Bunny->positions,
+			m_Bunny->normals,
+			m_Bunny->indices);
 
-		bunny->Scale({ 2.f, 2.f, 2.f });
-		bunny->UpdateAABB();
-		bunny->UpdateTransforms();
+		m_Bunny->Scale({ 2.f, 2.f, 2.f });
+		m_Bunny->UpdateAABB();
+		m_Bunny->UpdateTransforms();
 
 		//Light
 		AddPointLight(Vector3{ 0.f, 5.f, 5.f }, 50.f, ColorRGB{ 1.f, 0.61f, .45f });
 		AddPointLight(Vector3{ -2.5f, 5.f, -5.f }, 70.f, ColorRGB{ 1.f, 0.8f, .45f });
 		AddPointLight(Vector3{ 2.5f, 2.5f, -5.f }, 50.f, ColorRGB{ .34f, 0.47f, .68f });
+	}
+	void Scene_W4_BunnyScene::Update(Timer* pTimer)
+	{
+		Scene::Update(pTimer);
+
+		const auto yawAngle = (cos(pTimer->GetTotal()) + 1.f) / 2.f * PI_2;
+		m_Bunny->RotateY(yawAngle);
+		m_Bunny->UpdateTransforms();
 	}
 #pragma endregion
 }
