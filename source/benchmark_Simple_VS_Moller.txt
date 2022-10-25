@@ -1,0 +1,13 @@
+Simple ray-triangle intersection:
+
+FRAMES = 60
+HIGH = 12.3937
+LOW = 7.83571
+AVG = 10.2389
+
+Möller-Trumbore algorithm
+
+FRAMES = 60
+HIGH = 14.4503
+LOW = 9.55969
+AVG = 12.1563
