@@ -77,36 +77,31 @@ namespace dae
 			hitRecord.didHit = false;
 
 			const Vector3 rayToShpere = ray.origin - sphere.origin;
-			const float A = 1.f;
-			const float B = Vector3::Dot(2 * ray.direction, (rayToShpere));
-			const float C = Vector3::Dot((rayToShpere), (rayToShpere)) - (sphere.radius * sphere.radius);
+			const float B = 2.f * Vector3::Dot(ray.direction, (rayToShpere));
+			const float C = Vector3::Dot(rayToShpere, rayToShpere) - (sphere.radius * sphere.radius);
 
-			const float discriminant{ (B * B) - (4 * A * C) };
+			const float discriminant{ (B * B) - (4.f * C) };
 
 			if (discriminant < 0) return false;
 
 			const float sqrtDiscriminant = Sqrt_Intrin(discriminant);
-			float t = (-B - sqrtDiscriminant) / (2 * A);
+			float t = (-B - sqrtDiscriminant) / 2.f;
 
 			if (t < ray.min)
 			{
-				t = (-B + sqrtDiscriminant) / (2 * A);
+				t = (-B + sqrtDiscriminant) / 2.f;
 			}
 
-			if (t >= ray.min && t <= ray.max)
-			{
-				if (ignoreHitRecord) return true;
+			if (t < ray.min || t > ray.max) return false;
+			
+			if (ignoreHitRecord) return true;
 
-				hitRecord.didHit = true;
-				hitRecord.materialIndex = sphere.materialIndex;
-				hitRecord.t = t;
-				hitRecord.origin = ray.origin + (t * ray.direction);
-				hitRecord.normal = (hitRecord.origin - sphere.origin).Normalized();
-
-				return true;
-			}
-
-			return false;
+			hitRecord.didHit = true;
+			hitRecord.materialIndex = sphere.materialIndex;
+			hitRecord.t = t;
+			hitRecord.origin = ray.origin + (t * ray.direction);
+			hitRecord.normal = (hitRecord.origin - sphere.origin).Normalized();
+			return true;
 #endif
 		}
 

@@ -99,14 +99,14 @@ void Renderer::Render(Scene* pScene) const
 
 void dae::Renderer::RenderPixel(Scene* pScene, uint32_t pixelIndex, const Camera& camera, const std::vector<Light>& lights, const std::vector<Material*>& materials) const
 {
-	int px = pixelIndex % m_Width;
-	int py = pixelIndex / m_Width;
+	const int px = pixelIndex % m_Width + 0.5f;
+	const int py = pixelIndex / m_Width + 0.5f;
 
-	const float cx{ ((2.0f * (px + 0.5f) / static_cast<float>(m_Width)) - 1) * m_AspectRatio * camera.fov };
-	const float cy{ (1 - (2 * (py + 0.5f) / static_cast<float>(m_Height))) * camera.fov };
+	const float cx{ ((2.f * px / static_cast<float>(m_Width)) - 1.f) * m_AspectRatio * camera.fov };
+	const float cy{ (1.f - (2.f * py / static_cast<float>(m_Height))) * camera.fov };
 
 	Vector3 rayDirection = { cx, cy, 1.f };
-	rayDirection = camera.cameraToWorld.TransformVector(rayDirection).Normalized();
+	rayDirection = camera.cameraToWorld.TransformVector(rayDirection);
 
 	Ray viewRay{ camera.origin, rayDirection };
 	ColorRGB finalColor{};
