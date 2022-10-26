@@ -20,6 +20,7 @@ namespace dae
 		Vector3 Normalized() const;
 
 		static float Dot(const Vector3& v1, const Vector3& v2);
+		static void Dot_AVX(const Vector3& v1, const Vector3& v2, const Vector3& v3, const Vector3& v4, float& dp1, float& dp2);
 		static Vector3 Cross(const Vector3& v1, const Vector3& v2);
 		static Vector3 Project(const Vector3& v1, const Vector3& v2);
 		static Vector3 Reject(const Vector3& v1, const Vector3& v2);

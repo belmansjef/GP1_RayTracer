@@ -204,6 +204,7 @@ namespace dae
 				cullMode = TriangleCullMode(((int)cullMode + 1) % 2);
 
 			if (det < EPSILON && cullMode == TriangleCullMode::BackFaceCulling) return false;
+			if (det > EPSILON && cullMode == TriangleCullMode::FrontFaceCulling) return false;
 			if (abs(det) < EPSILON) return false;
 
 			const float invDet = 1 / det;
@@ -216,7 +217,7 @@ namespace dae
 			const float v = Vector3::Dot(ray.direction, qvec) * invDet;
 			if (v < 0 || u + v > 1) return false;
 
-			const float t = Vector3::Dot(v0v2, qvec)* invDet;
+			const float t = Vector3::Dot(v0v2, qvec) * invDet;
 			if (t < ray.min || t > ray.max) return false;
 
 			if (ignoreHitRecord) return true;
@@ -238,8 +239,9 @@ namespace dae
 #pragma region TriangeMesh HitTest
 		inline bool HitTest_TriangleMesh(const TriangleMesh& mesh, const Ray& ray, HitRecord& hitRecord, bool ignoreHitRecord = false)
 		{
-			hitRecord.didHit = false;
 			if (!SlabTest_TriangleMesh(mesh, ray)) return false;
+
+			hitRecord.didHit = false;
 
 			HitRecord temp{};
 			int normalIndex{ 0 };

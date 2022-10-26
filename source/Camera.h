@@ -29,7 +29,6 @@ namespace dae
 		float fovAngle{90.f};
 		float fov{};
 
-		// Vector3 forward{0.266f, -0.453f, 0.860f};
 		Vector3 forward{Vector3::UnitZ};
 		Vector3 up{Vector3::UnitY};
 		Vector3 right{Vector3::UnitX};
@@ -46,21 +45,33 @@ namespace dae
 			return cameraToWorld = {right, up, forward, origin};
 		}
 
+		const float EPSILON = 0.025f;
 		void Update(Timer* pTimer)
 		{
+			//Keyboard Input
+			const uint8_t* pKeyboardState = SDL_GetKeyboardState(nullptr);
+			
+			//Mouse Input
+			int mouseX{}, mouseY{};
+			const uint32_t mouseState = SDL_GetRelativeMouseState(&mouseX, &mouseY);
+			
+			if (abs(mouseX) < EPSILON &&
+				abs(mouseY) < EPSILON &&
+				!pKeyboardState[SDL_SCANCODE_D] &&
+				!pKeyboardState[SDL_SCANCODE_A] &&
+				!pKeyboardState[SDL_SCANCODE_W] &&
+				!pKeyboardState[SDL_SCANCODE_S])
+			{
+				return;
+			}
+
 			const float deltaTime = pTimer->GetElapsed();
 			const float constMoveSpeed = moveSpeed * deltaTime;
 			const float constLookSpeed = lookSpeed * deltaTime;
 
-			//Keyboard Input
-			const uint8_t* pKeyboardState = SDL_GetKeyboardState(nullptr);
-			
 			origin += (pKeyboardState[SDL_SCANCODE_D] - pKeyboardState[SDL_SCANCODE_A]) * constMoveSpeed * right;
 			origin += (pKeyboardState[SDL_SCANCODE_W] - pKeyboardState[SDL_SCANCODE_S]) * constMoveSpeed * forward;
-
-			//Mouse Input
-			int mouseX{}, mouseY{};
-			const uint32_t mouseState = SDL_GetRelativeMouseState(&mouseX, &mouseY);
+			
 			if (mouseState & SDL_BUTTON_LMASK)
 			{
 				if (mouseState & SDL_BUTTON_RMASK)
@@ -80,6 +91,8 @@ namespace dae
 			
 			if (mouseState & SDL_BUTTON_LMASK || mouseState & SDL_BUTTON_RMASK)
 				CalculateLookRotation();
+
+			CalculateCameraToWorld();
 		}
 
 		float CalculateFov()
