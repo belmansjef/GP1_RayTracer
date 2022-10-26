@@ -5,10 +5,11 @@
 #include "Vector4.h"
 #include <cmath>
 #include <stdio.h>
-#include <immintrin.h>
+#include <smmintrin.h>
 #include <iostream>
+#include "Math.h"
 
-#define SIMD
+// #define SIMD
 
 namespace dae {
 	const Vector3 Vector3::UnitX = Vector3{ 1, 0, 0 };
@@ -24,7 +25,7 @@ namespace dae {
 
 	float Vector3::Magnitude() const
 	{
-		return sqrtf(x * x + y * y + z * z);
+		return Sqrt_Intrin(x * x + y * y + z * z);
 	}
 
 	float Vector3::SqrMagnitude() const
@@ -62,15 +63,6 @@ namespace dae {
 
 	void Vector3::Dot_AVX(const Vector3& v1, const Vector3& v2, const Vector3& v3, const Vector3& v4, float& dp1, float& dp2)
 	{
-		const __m256 __X = _mm256_set_ps(v1.x, v1.y, v1.z, 0.f, v3.x, v3.y, v3.z, 0.f);
-		const __m256 __Y = _mm256_set_ps(v2.x, v2.y, v2.z, 0.f, v4.x, v4.y, v4.z, 0.f);
-		const __m256 dp = _mm256_dp_ps(__X, __Y, 0xFF);
-
-		const __m128 low = _mm256_castps256_ps128(dp);
-		const __m128 high = _mm256_extractf128_ps(dp, 1);
-		dp1 = _mm_cvtss_f32(low);
-		dp2 = _mm_cvtss_f32(high);
-
 		return;
 	}
 

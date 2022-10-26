@@ -4,6 +4,9 @@
 #include "Math.h"
 #include "DataTypes.h"
 
+// #define Geometric
+#define Moller
+
 namespace dae
 {
 	namespace GeometryUtils
@@ -36,10 +39,45 @@ namespace dae
 		//SPHERE HIT-TESTS
 		inline bool HitTest_Sphere(const Sphere& sphere, const Ray& ray, HitRecord& hitRecord, bool ignoreHitRecord = false)
 		{
+
+#ifdef Geometric
+			hitRecord.didHit = false;
+
+			const Vector3 L = sphere.origin - ray.origin;
+			const float tca = Vector3::Dot(L, ray.direction);
+			if (tca < 0) return false;
+
+			const float d2 = Vector3::Dot(L, L) - tca * tca;
+			if (d2 > sphere.radius * sphere.radius || d2 < 0) return false;
+
+			const float thc = Sqrt_Intrin(sphere.radius * sphere.radius - d2);
+			float t0 = tca - thc;
+			float t1 = tca + thc;
+
+			if (t0 < 0)
+			{
+				t0 = t1;
+				if (t0 < 0) return false;
+			}
+
+			if (t0 >= ray.min && t0 <= ray.max)
+			{
+				if (ignoreHitRecord) return true;
+				const Vector3 intersect{ ray.origin + t0 * ray.direction };
+				hitRecord.didHit = true;
+				hitRecord.origin = intersect;
+				hitRecord.materialIndex = sphere.materialIndex;
+				hitRecord.t = t0;
+				hitRecord.normal = (hitRecord.origin - sphere.origin).Normalized();
+				return true;
+			}
+
+			return false;
+#else
 			hitRecord.didHit = false;
 
 			const Vector3 rayToShpere = ray.origin - sphere.origin;
-			const float A = Vector3::Dot(ray.direction, ray.direction);
+			const float A = 1.f;
 			const float B = Vector3::Dot(2 * ray.direction, (rayToShpere));
 			const float C = Vector3::Dot((rayToShpere), (rayToShpere)) - (sphere.radius * sphere.radius);
 
@@ -47,7 +85,7 @@ namespace dae
 
 			if (discriminant < 0) return false;
 
-			const float sqrtDiscriminant = std::sqrtf(discriminant);
+			const float sqrtDiscriminant = Sqrt_Intrin(discriminant);
 			float t = (-B - sqrtDiscriminant) / (2 * A);
 
 			if (t < ray.min)
@@ -69,42 +107,7 @@ namespace dae
 			}
 
 			return false;
-
-			/*hitRecord.didHit = false;
-
-			const Vector3 L = sphere.origin - ray.origin;
-			const float tca = Vector3::Dot(L, ray.direction);
-			if (tca < 0) return false;
-
-			const float d2 = Vector3::Dot(L, L) - tca * tca;
-			if (d2 > sphere.radius * sphere.radius || d2 < 0) return false;
-
-			const float thc = sqrt(sphere.radius * sphere.radius - d2);
-			float t0 = tca - thc;
-			float t1 = tca + thc;
-
-			if (t0 > t1) std::swap(t0, t1);
-			if (t0 < 0)
-			{
-				t0 = t1;
-				if (t0 < 0) return false;
-			}
-
-			if (t0 < 0) return false;
-
-			if (t0 >= ray.min && t0 <= ray.max)
-			{
-				if (ignoreHitRecord) return true;
-				const Vector3 intersect{ ray.origin + t0 * ray.direction };
-				hitRecord.didHit = true;
-				hitRecord.origin = intersect;
-				hitRecord.materialIndex = sphere.materialIndex;
-				hitRecord.t = t0;
-				hitRecord.normal = (hitRecord.origin - sphere.origin).Normalized();
-				return true;
-			}
-
-			return false;*/
+#endif
 		}
 
 		inline bool HitTest_Sphere(const Sphere& sphere, const Ray& ray)
@@ -144,54 +147,10 @@ namespace dae
 #pragma endregion
 #pragma region Triangle HitTest
 		//TRIANGLE HIT-TESTS
-		const float EPSILON = 0.0025f;
+		const float EPSILON = 0.0000001f;
 		inline bool HitTest_Triangle(const Triangle& triangle, const Ray& ray, HitRecord& hitRecord, bool ignoreHitRecord = false)
 		{
-			//hitRecord.didHit = false;
-
-			//TriangleCullMode cullMode{ triangle.cullMode };
-			//// Flip cull mode for shadow rays
-			//if(ignoreHitRecord && cullMode != TriangleCullMode::NoCulling)
-			//	cullMode = TriangleCullMode(((int)cullMode + 1) % 2);
-
-			//// If view ray is perpendicular to normal, we can't see the face
-			//const float rayDotNormal{ Vector3::Dot(ray.direction, triangle.normal) };
-			//if (
-			//	(rayDotNormal == 0) ||
-			//	(rayDotNormal > 0 && cullMode == TriangleCullMode::BackFaceCulling) ||
-			//	(rayDotNormal < 0 && cullMode == TriangleCullMode::FrontFaceCulling)
-			//	) return false;
-
-			//const Vector3 triangleCenter{ (triangle.v0 + triangle.v1 + triangle.v2) / 3.f };
-			//const Vector3 viewToCenter{ triangleCenter - ray.origin };
-			//const float t = Vector3::Dot(viewToCenter, triangle.normal) / Vector3::Dot(ray.direction, triangle.normal);
-
-			//if (t >= ray.max || t <= ray.min) return false;
-
-			//const Vector3 intersection = ray.origin + (ray.direction * t);
-
-			//const Vector3 edgeA{ triangle.v1 - triangle.v0 };
-			//const Vector3 edgeB{ triangle.v2 - triangle.v1 };
-			//const Vector3 edgeC{ triangle.v0 - triangle.v2 };
-			//
-			//Vector3 pointToIntersect{ intersection - triangle.v0 };
-			//if (Vector3::Dot(triangle.normal, Vector3::Cross(edgeA, pointToIntersect)) < 0) return false;
-
-			//pointToIntersect =  intersection - triangle.v1;
-			//if (Vector3::Dot(triangle.normal, Vector3::Cross(edgeB, pointToIntersect)) < 0) return false;
-
-			//pointToIntersect = intersection - triangle.v2;
-			//if (Vector3::Dot(triangle.normal, Vector3::Cross(edgeC, pointToIntersect)) < 0) return false;
-
-			//if (ignoreHitRecord) return true;
-
-			//hitRecord.didHit = true;
-			//hitRecord.normal = triangle.normal;
-			//hitRecord.origin = intersection;
-			//hitRecord.t = t;
-			//hitRecord.materialIndex = triangle.materialIndex;
-			//return true;
-
+#ifdef Moller
 			hitRecord.didHit = false;
 
 			const Vector3 v0v1 = triangle.v1 - triangle.v0;
@@ -200,7 +159,7 @@ namespace dae
 			const float det = Vector3::Dot(v0v1, pvec);
 
 			TriangleCullMode cullMode{ triangle.cullMode };
-			if(ignoreHitRecord && cullMode != TriangleCullMode::NoCulling)
+			if (ignoreHitRecord && cullMode != TriangleCullMode::NoCulling)
 				cullMode = TriangleCullMode(((int)cullMode + 1) % 2);
 
 			if (det < EPSILON && cullMode == TriangleCullMode::BackFaceCulling) return false;
@@ -228,6 +187,52 @@ namespace dae
 			hitRecord.origin = ray.origin + ray.direction * t;
 			hitRecord.materialIndex = triangle.materialIndex;
 			return true;
+#else
+			hitRecord.didHit = false;
+
+			TriangleCullMode cullMode{ triangle.cullMode };
+			// Flip cull mode for shadow rays
+			if(ignoreHitRecord && cullMode != TriangleCullMode::NoCulling)
+				cullMode = TriangleCullMode(((int)cullMode + 1) % 2);
+
+			// If view ray is perpendicular to normal, we can't see the face
+			const float rayDotNormal{ Vector3::Dot(ray.direction, triangle.normal) };
+			if (
+				(rayDotNormal == 0) ||
+				(rayDotNormal > 0 && cullMode == TriangleCullMode::BackFaceCulling) ||
+				(rayDotNormal < 0 && cullMode == TriangleCullMode::FrontFaceCulling)
+				) return false;
+
+			const Vector3 triangleCenter{ (triangle.v0 + triangle.v1 + triangle.v2) / 3.f };
+			const Vector3 viewToCenter{ triangleCenter - ray.origin };
+			const float t = Vector3::Dot(viewToCenter, triangle.normal) / Vector3::Dot(ray.direction, triangle.normal);
+
+			if (t >= ray.max || t <= ray.min) return false;
+
+			const Vector3 intersection = ray.origin + (ray.direction * t);
+
+			const Vector3 edgeA{ triangle.v1 - triangle.v0 };
+			const Vector3 edgeB{ triangle.v2 - triangle.v1 };
+			const Vector3 edgeC{ triangle.v0 - triangle.v2 };
+			
+			Vector3 pointToIntersect{ intersection - triangle.v0 };
+			if (Vector3::Dot(triangle.normal, Vector3::Cross(edgeA, pointToIntersect)) < 0) return false;
+
+			pointToIntersect =  intersection - triangle.v1;
+			if (Vector3::Dot(triangle.normal, Vector3::Cross(edgeB, pointToIntersect)) < 0) return false;
+
+			pointToIntersect = intersection - triangle.v2;
+			if (Vector3::Dot(triangle.normal, Vector3::Cross(edgeC, pointToIntersect)) < 0) return false;
+
+			if (ignoreHitRecord) return true;
+
+			hitRecord.didHit = true;
+			hitRecord.normal = triangle.normal;
+			hitRecord.origin = intersection;
+			hitRecord.t = t;
+			hitRecord.materialIndex = triangle.materialIndex;
+			return true;
+#endif // Moller		
 		}
 
 		inline bool HitTest_Triangle(const Triangle& triangle, const Ray& ray)

@@ -1,5 +1,6 @@
 #pragma once
 #include <cmath>
+#include <xmmintrin.h>
 
 namespace dae
 {
@@ -16,6 +17,13 @@ namespace dae
 	inline float Square(float a)
 	{
 		return a * a;
+	}
+	
+	inline float Sqrt_Intrin(float arg)
+	{
+		return _mm_cvtss_f32(
+			_mm_sqrt_ss(_mm_set_ps1(arg))
+		);
 	}
 
 	inline float Lerpf(float a, float b, float factor)
