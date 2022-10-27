@@ -146,7 +146,7 @@ namespace dae
 		inline bool HitTest_Triangle(const Triangle& triangle, const Ray& ray, HitRecord& hitRecord, bool ignoreHitRecord = false)
 		{
 #ifdef Moller
-			hitRecord.didHit = false;
+			// hitRecord.didHit = false;
 
 			const Vector3 v0v1 = triangle.v1 - triangle.v0;
 			const Vector3 v0v2 = triangle.v2 - triangle.v0;
@@ -172,7 +172,7 @@ namespace dae
 			if (v < 0 || u + v > 1) return false;
 
 			const float t = Vector3::Dot(v0v2, qvec) * invDet;
-			if (t < ray.min || t > ray.max) return false;
+			if (t < ray.min || t > ray.max || hitRecord.t < t) return false;
 
 			if (ignoreHitRecord) return true;
 

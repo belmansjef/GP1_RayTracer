@@ -98,6 +98,29 @@ namespace dae
 		std::vector<Vector3> transformedPositions{};
 		std::vector<Vector3> transformedNormals{};
 
+		void UpdateTriangles() 
+		{
+			triangles.clear();
+			triangles.reserve(indices.size() / 3.f);
+
+			int normalIndex{ 0 };
+			for (uint64_t index = 0; index < indices.size(); index += 3)
+			{
+				uint32_t i0 = indices[index];
+				uint32_t i1 = indices[index + 1];
+				uint32_t i2 = indices[index + 2];
+
+				Vector3 v0 = transformedPositions[i0];
+				Vector3 v1 = transformedPositions[i1];
+				Vector3 v2 = transformedPositions[i2];
+
+				Triangle triangle(v0, v1, v2, transformedNormals[normalIndex++]);
+				triangle.cullMode = cullMode;
+				triangle.materialIndex = materialIndex;
+				triangles.emplace_back(triangle);
+			}
+		}
+
 		void UpdateAABB()
 		{
 			if (positions.size() > 0)
@@ -220,6 +243,8 @@ namespace dae
 			{
 				transformedNormals.emplace_back(finalTransform.TransformVector(normal));
 			}
+
+			UpdateTriangles();
 		}
 	};
 

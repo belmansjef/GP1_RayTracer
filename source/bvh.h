@@ -6,13 +6,9 @@ namespace dae
 	struct BVHNode
 	{
 		Vector3 aabbMin, aabbMax;
-		int leftChild, rightChild;
-		uint8_t firstPrim, primCount;
+		uint8_t leftNode, firstTriIdx, triCount;
 
-		bool IsLeaf()
-		{
-			return primCount > 0;
-		}
+		bool IsLeaf() { return triCount > 0; }
 	};
 
 	class BVH
@@ -20,11 +16,15 @@ namespace dae
 	public:
 		BVH() = default;
 		BVH(TriangleMesh* mesh);
+
 		void Build();
-		bool Intersect(const Ray& ray, HitRecord& hitRecord, uint8_t nodeIdx);
+		void IntersectBVH(const Ray& ray, HitRecord& hitRecord, uint8_t nodeIdx);
+		void UpdateAllNodeBounds(uint8_t nodeIdx);
+
 		std::vector<BVHNode> m_Nodes;
+		std::vector<uint8_t> m_TriIdx;
 		uint8_t rootNodeIdx = 0, nodesUsed = 1;
-		TriangleMesh* m_MeshPtr = nullptr;
+		TriangleMesh* m_pMesh = nullptr;
 
 	private:
 		void Subdivide(uint8_t nodeIdx);

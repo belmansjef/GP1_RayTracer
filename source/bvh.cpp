@@ -25,74 +25,89 @@ namespace dae
 
 		return tmax > 0 && tmax >= tmin;
 	}
+
 	BVH::BVH(TriangleMesh* mesh)
-		: m_MeshPtr { mesh }
+		: m_pMesh{ mesh }
+		, m_TriCount{ (uint8_t)(mesh->indices.size() / 3) }
 	{
 		Build();
 	}
 	void BVH::Build()
 	{
-		m_TriCount = (m_MeshPtr->indices.size() / 3.f);
-		m_Nodes.reserve(m_TriCount * 2.f - 1.f);
-
+		m_TriIdx.reserve(m_TriCount);
+		m_Nodes.reserve((uint8_t)(m_TriCount * 2.f - 1.f));
+		for (int i = 0; i < m_TriCount; i++)
+		{
+			m_TriIdx.emplace_back(i);
+		}
+		for (int i = 0; i < (m_TriCount * 2 - 1); ++i)
+		{
+			m_Nodes.emplace_back(BVHNode());
+		}
+		
 		BVHNode& root = m_Nodes[rootNodeIdx];
-		root.leftChild = root.rightChild = 0;
-		root.firstPrim = 0, root.primCount = m_TriCount;
+		root.leftNode = root.firstTriIdx = 0;
+		root.triCount = m_TriCount;
 		UpdateNodeBounds(rootNodeIdx);
 		Subdivide(rootNodeIdx);
 
 	}
-	bool BVH::Intersect(const Ray& ray, HitRecord& hitRecord, uint8_t nodeIdx)
+	void BVH::IntersectBVH(const Ray& ray, HitRecord& hitRecord, uint8_t nodeIdx)
 	{
 		BVHNode& node = m_Nodes[nodeIdx];
-		if (!IntersectAABB(ray, node.aabbMin, node.aabbMax)) return false;
+		if (!IntersectAABB(ray, node.aabbMin, node.aabbMax)) return;
 		if (node.IsLeaf())
 		{
-			for (uint8_t i = 0; i < node.primCount; i++)
+			for (uint8_t i = 0; i < node.triCount; i++)
 			{
-				if (GeometryUtils::HitTest_Triangle(m_MeshPtr->triangles[i], ray, hitRecord)) return true;
+				GeometryUtils::HitTest_Triangle(m_pMesh->triangles[m_TriIdx[node.firstTriIdx + i]], ray, hitRecord);
 			}
-			return false;
 		}
 		else
 		{
-			Intersect(ray, hitRecord, node.leftChild);
-			Intersect(ray, hitRecord, node.rightChild);
+			IntersectBVH(ray, hitRecord, node.leftNode);
+			IntersectBVH(ray, hitRecord, node.leftNode + 1);
 		}
+	}
+	void BVH::UpdateAllNodeBounds(uint8_t nodeIdx)
+	{
+		BVHNode& node = m_Nodes[nodeIdx];
+		if (node.IsLeaf()) return;
 
-		return false;
+		UpdateAllNodeBounds(nodeIdx++);
+		UpdateNodeBounds(nodeIdx);
 	}
 	void BVH::Subdivide(uint8_t nodeIdx)
 	{
 		BVHNode& node = m_Nodes[nodeIdx];
-		if (node.primCount < 2) return;
+		if (node.triCount < 2) return;
 
 		Vector3 extent = node.aabbMax - node.aabbMin;
 		int axis = 0;
 		if (extent.y > extent.x) axis = 1;
 		if (extent.z > extent[axis]) axis = 2;
 		float splitPos = node.aabbMin[axis] + extent[axis] * 0.5f;
-		int i = node.firstPrim;
-		int j = i + node.primCount - 1;
+		int i = node.firstTriIdx;
+		int j = i + node.triCount - 1;
 		while (i <= j)
 		{
-			if (m_MeshPtr->triangles[i].centroid[axis] < splitPos)
+			if (m_pMesh->triangles[m_TriIdx[i]].centroid[axis] < splitPos)
 				i++;
 			else
-				std::swap(m_MeshPtr->triangles[i], m_MeshPtr->triangles[j--]);
+				std::swap(m_TriIdx[i], m_TriIdx[j--]);
 		}
 
-		int leftCount = i - node.firstPrim;
-		if (leftCount == 0 || leftCount == node.primCount) return;
+		int leftCount = i - node.firstTriIdx;
+		if (leftCount == 0 || leftCount == node.triCount) return;
 
 		int leftChildIdx = nodesUsed++;
 		int rightChildIdx = nodesUsed++;
-		node.leftChild = leftChildIdx;
-		m_Nodes[leftChildIdx].firstPrim = node.firstPrim;
-		m_Nodes[leftChildIdx].primCount = leftCount;
-		m_Nodes[rightChildIdx].firstPrim = i;
-		m_Nodes[rightChildIdx].primCount = node.primCount - leftCount;
-		node.primCount = 0;
+		node.leftNode = leftChildIdx;
+		m_Nodes[leftChildIdx].firstTriIdx = node.firstTriIdx;
+		m_Nodes[leftChildIdx].triCount = leftCount;
+		m_Nodes[rightChildIdx].firstTriIdx = i;
+		m_Nodes[rightChildIdx].triCount = node.triCount - leftCount;
+		node.triCount = 0;
 
 		UpdateNodeBounds(leftChildIdx);
 		UpdateNodeBounds(rightChildIdx);
@@ -105,10 +120,10 @@ namespace dae
 		BVHNode& node = m_Nodes[nodeIdx];
 		node.aabbMin = Vector3({ INFINITY, INFINITY, INFINITY });
 		node.aabbMax = Vector3({ -INFINITY, -INFINITY, -INFINITY });
-		uint16_t first = node.firstPrim;
-		for (uint16_t i = 0; i < node.primCount; i += 3)
+		for (uint16_t first = node.firstTriIdx, i = 0; i < node.triCount; i++)
 		{
-			Triangle& leafTri = m_MeshPtr->triangles[first + i];
+			uint8_t leafTriIdx = m_TriIdx[first + i];
+			Triangle& leafTri = m_pMesh->triangles[leafTriIdx];
 			node.aabbMin = Vector3::Min(node.aabbMin, leafTri.v0);
 			node.aabbMin = Vector3::Min(node.aabbMin, leafTri.v1);
 			node.aabbMin = Vector3::Min(node.aabbMin, leafTri.v2);

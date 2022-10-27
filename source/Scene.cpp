@@ -2,6 +2,8 @@
 #include "Utils.h"
 #include "Material.h"
 
+#define USE_BVH
+
 namespace dae {
 
 #pragma region Base Scene
@@ -51,6 +53,14 @@ namespace dae {
 			}
 		}
 
+#ifdef USE_BVH
+		m_pBVH[0]->IntersectBVH(ray, temp, 0);
+
+		if (temp.t < closestHit.t)
+		{
+			closestHit = temp;
+		}
+#else
 		for (const TriangleMesh& triangleMesh : m_TriangleMeshGeometries)
 		{
 			if (GeometryUtils::HitTest_TriangleMesh(triangleMesh, ray, temp))
@@ -61,6 +71,7 @@ namespace dae {
 				}
 			}
 		}
+#endif // USE_BVH
 	}
 
 	bool Scene::DoesHit(const Ray& ray) const
@@ -123,9 +134,6 @@ namespace dae {
 		m.materialIndex = materialIndex;
 
 		m_TriangleMeshGeometries.emplace_back(m);
-
-		// m_BVHs.emplace_back(m);
-
 		return &m_TriangleMeshGeometries.back();
 	}
 
@@ -404,6 +412,8 @@ namespace dae {
 		m_Bunny->UpdateAABB();
 		m_Bunny->UpdateTransforms();
 
+		m_pBVH.push_back(new BVH(m_Bunny));
+
 		//Light
 		AddPointLight(Vector3{ 0.f, 5.f, 5.f }, 50.f, ColorRGB{ 1.f, 0.61f, .45f });
 		AddPointLight(Vector3{ -2.5f, 5.f, -5.f }, 70.f, ColorRGB{ 1.f, 0.8f, .45f });
@@ -416,6 +426,7 @@ namespace dae {
 		const auto yawAngle = (cos(pTimer->GetTotal()) + 1.f) / 2.f * PI_2;
 		m_Bunny->RotateY(yawAngle);
 		m_Bunny->UpdateTransforms();
+		// m_pBVH[0]->UpdateAllNodeBounds(0);
 	}
 #pragma endregion
 }
