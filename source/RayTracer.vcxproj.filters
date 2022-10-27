@@ -53,6 +53,9 @@
     <ClInclude Include="DataTypes.h">
       <Filter>Misc</Filter>
     </ClInclude>
+    <ClInclude Include="bvh.h">
+      <Filter>Misc</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="main.cpp" />
@@ -70,6 +73,9 @@
       <Filter>Misc</Filter>
     </ClCompile>
     <ClCompile Include="Timer.cpp">
+      <Filter>Misc</Filter>
+    </ClCompile>
+    <ClCompile Include="bvh.cpp">
       <Filter>Misc</Filter>
     </ClCompile>
   </ItemGroup>

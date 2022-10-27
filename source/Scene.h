@@ -5,6 +5,7 @@
 #include "Math.h"
 #include "DataTypes.h"
 #include "Camera.h"
+#include "bvh.h"
 
 namespace dae
 {
@@ -51,6 +52,7 @@ namespace dae
 		std::vector<Light> m_Lights{};
 		std::vector<Material*> m_Materials{};
 		std::vector<Triangle> m_Triangles{};
+		std::vector<BVH> m_BVHs{};
 
 		Camera m_Camera{};
 

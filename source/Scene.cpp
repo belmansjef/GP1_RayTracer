@@ -123,6 +123,9 @@ namespace dae {
 		m.materialIndex = materialIndex;
 
 		m_TriangleMeshGeometries.emplace_back(m);
+
+		// m_BVHs.emplace_back(m);
+
 		return &m_TriangleMeshGeometries.back();
 	}
 

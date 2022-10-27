@@ -35,10 +35,12 @@ namespace dae
 	{
 		Triangle() = default;
 		Triangle(const Vector3& _v0, const Vector3& _v1, const Vector3& _v2, const Vector3& _normal):
-			v0{_v0}, v1{_v1}, v2{_v2}, normal{_normal.Normalized()}{}
+			v0{ _v0 }, v1{ _v1 }, v2{ _v2 }, normal{ _normal.Normalized() }, centroid{ (_v0 + _v1 + _v2) * 0.33333f }
+		{
+		}
 
 		Triangle(const Vector3& _v0, const Vector3& _v1, const Vector3& _v2) :
-			v0{ _v0 }, v1{ _v1 }, v2{ _v2 }
+			v0{ _v0 }, v1{ _v1 }, v2{ _v2 }, centroid{ (_v0 + _v1 + _v2) * 0.33333f }
 		{
 			const Vector3 edgeV0V1 = v1 - v0;
 			const Vector3 edgeV0V2 = v2 - v0;
@@ -49,6 +51,7 @@ namespace dae
 		Vector3 v1{};
 		Vector3 v2{};
 
+		Vector3 centroid{};
 		Vector3 normal{};
 
 		TriangleCullMode cullMode{};
@@ -77,8 +80,7 @@ namespace dae
 		std::vector<Vector3> positions{};
 		std::vector<Vector3> normals{};
 		std::vector<int> indices{};
-		std::vector<Vector3> centroids{};
-		std::vector<BVHNode> bvhNode{};
+		std::vector<Triangle> triangles{};
 		unsigned char materialIndex{};
 
 		TriangleCullMode cullMode{TriangleCullMode::BackFaceCulling};
@@ -95,12 +97,6 @@ namespace dae
 
 		std::vector<Vector3> transformedPositions{};
 		std::vector<Vector3> transformedNormals{};
-
-		void BuildBVH()
-		{
-			bvhNode.reserve(indices.size() / 3.f);
-			uint8_t rootNodeIdx = 0, nodesUsed = 1;
-		}
 
 		void UpdateAABB()
 		{
@@ -153,18 +149,6 @@ namespace dae
 			transformedMaxAABB = tMaxAABB;
 		}
 
-		void UpdateCentroids()
-		{
-			for (uint64_t index = 0; index < indices.size(); index += 3)
-			{
-				uint32_t i0 = indices[index];
-				uint32_t i1 = indices[index + 1];
-				uint32_t i2 = indices[index + 2];
-
-				centroids.push_back((transformedPositions[i0] + transformedPositions[i1] + transformedPositions[i2]) * 0.33333f);
-			}
-		}
-
 		void Translate(const Vector3& translation)
 		{
 			translationTransform = Matrix::CreateTranslation(translation);
@@ -194,7 +178,7 @@ namespace dae
 
 			normals.push_back(triangle.normal);
 
-			centroids.emplace_back((triangle.v0 + triangle.v1 + triangle.v2) * 0.33333f);
+			triangles.emplace_back(triangle);
 
 			//Not ideal, but making sure all vertices are updated
 			if(!ignoreTransformUpdate)
@@ -229,7 +213,6 @@ namespace dae
 			}
 
 			UpdateTransformedAABB(finalTransform);
-			UpdateCentroids();
 
 			transformedNormals.clear();
 			transformedNormals.reserve(normals.size());
