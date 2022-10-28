@@ -5,6 +5,8 @@
 #include "Math.h"
 #include "vector"
 
+#define USE_BVH
+
 namespace dae
 {
 #pragma region GEOMETRY
@@ -101,7 +103,7 @@ namespace dae
 		void UpdateTriangles() 
 		{
 			triangles.clear();
-			triangles.reserve(indices.size() / 3.f);
+			triangles.reserve((uint64_t)(indices.size() / 3.f));
 
 			int normalIndex{ 0 };
 			for (uint64_t index = 0; index < indices.size(); index += 3)
@@ -235,7 +237,9 @@ namespace dae
 				transformedPositions.emplace_back(finalTransform.TransformPoint(pos));
 			}
 
+#ifndef USE_BVH
 			UpdateTransformedAABB(finalTransform);
+#endif // !USE_BVH
 
 			transformedNormals.clear();
 			transformedNormals.reserve(normals.size());

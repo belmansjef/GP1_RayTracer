@@ -6,7 +6,7 @@ namespace dae
 	struct BVHNode
 	{
 		Vector3 aabbMin, aabbMax;
-		uint8_t leftNode, firstTriIdx, triCount;
+		uint64_t leftNode, firstTriIdx, triCount;
 
 		bool IsLeaf() { return triCount > 0; }
 	};
@@ -18,17 +18,17 @@ namespace dae
 		BVH(TriangleMesh* mesh);
 
 		void Build();
-		void IntersectBVH(const Ray& ray, HitRecord& hitRecord, uint8_t nodeIdx);
-		void UpdateAllNodeBounds(uint8_t nodeIdx);
+		void IntersectBVH(const Ray& ray, HitRecord& hitRecord, bool ignoreHitRecord = false, uint64_t nodeIdx = 0);
+		void UpdateAllNodeBounds(uint64_t nodeIdx);
 
 		std::vector<BVHNode> m_Nodes;
-		std::vector<uint8_t> m_TriIdx;
-		uint8_t rootNodeIdx = 0, nodesUsed = 1;
+		std::vector<uint64_t> m_TriIdx;
+		uint64_t rootNodeIdx = 0, nodesUsed = 1;
 		TriangleMesh* m_pMesh = nullptr;
 
 	private:
-		void Subdivide(uint8_t nodeIdx);
-		void UpdateNodeBounds(uint8_t nodeIdx);
-		uint8_t m_TriCount;
+		void Subdivide(uint64_t nodeIdx);
+		void UpdateNodeBounds(uint64_t nodeIdx);
+		uint64_t m_TriCount;
 	};
 }

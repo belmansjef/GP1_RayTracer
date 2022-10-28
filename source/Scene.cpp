@@ -5,7 +5,6 @@
 #define USE_BVH
 
 namespace dae {
-
 #pragma region Base Scene
 	//Initialize Scene with Default Solid Color Material (RED)
 	Scene::Scene():
@@ -26,6 +25,12 @@ namespace dae {
 		}
 
 		m_Materials.clear();
+		for (auto& pBVH : m_pBVH)
+		{
+			delete pBVH;
+			pBVH = nullptr;
+		}
+		m_pBVH.clear();
 	}
 
 	void dae::Scene::GetClosestHit(const Ray& ray, HitRecord& closestHit) const
@@ -63,14 +68,11 @@ namespace dae {
 #else
 		for (const TriangleMesh& triangleMesh : m_TriangleMeshGeometries)
 		{
-			if (GeometryUtils::HitTest_TriangleMesh(triangleMesh, ray, temp))
-			{
-				if (temp.t < closestHit.t)
-				{
-					closestHit = temp;
-				}
-			}
+			GeometryUtils::HitTest_TriangleMesh(triangleMesh, ray, temp);
 		}
+
+		if (temp.t < closestHit.t)
+			closestHit = temp;
 #endif // USE_BVH
 	}
 
@@ -93,6 +95,12 @@ namespace dae {
 			}
 		}
 
+#ifdef USE_BVH
+		HitRecord temp{};
+		m_pBVH[0]->IntersectBVH(ray, temp, true);
+		if (temp.didHit) return true;
+
+#else
 		for (const TriangleMesh& triangleMesh : m_TriangleMeshGeometries)
 		{
 			if (GeometryUtils::HitTest_TriangleMesh(triangleMesh, ray))
@@ -100,6 +108,7 @@ namespace dae {
 				return true;
 			}
 		}
+#endif // USE_BVH
 
 		return false;
 	}
@@ -409,7 +418,11 @@ namespace dae {
 			m_Bunny->indices);
 
 		m_Bunny->Scale({ 2.f, 2.f, 2.f });
+
+#ifndef USE_BVH
 		m_Bunny->UpdateAABB();
+#endif // !USE_BVH
+		
 		m_Bunny->UpdateTransforms();
 
 		m_pBVH.push_back(new BVH(m_Bunny));
@@ -426,7 +439,7 @@ namespace dae {
 		const auto yawAngle = (cos(pTimer->GetTotal()) + 1.f) / 2.f * PI_2;
 		m_Bunny->RotateY(yawAngle);
 		m_Bunny->UpdateTransforms();
-		// m_pBVH[0]->UpdateAllNodeBounds(0);
+		m_pBVH[0]->UpdateAllNodeBounds(0);
 	}
 #pragma endregion
 }

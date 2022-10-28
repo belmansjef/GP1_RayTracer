@@ -142,12 +142,10 @@ namespace dae
 #pragma endregion
 #pragma region Triangle HitTest
 		//TRIANGLE HIT-TESTS
-		const float EPSILON = 0.0000001f;
+		const float EPSILON = 0.00000000001f;
 		inline bool HitTest_Triangle(const Triangle& triangle, const Ray& ray, HitRecord& hitRecord, bool ignoreHitRecord = false)
 		{
 #ifdef Moller
-			// hitRecord.didHit = false;
-
 			const Vector3 v0v1 = triangle.v1 - triangle.v0;
 			const Vector3 v0v2 = triangle.v2 - triangle.v0;
 			const Vector3 pvec = Vector3::Cross(ray.direction, v0v2);
@@ -174,16 +172,16 @@ namespace dae
 			const float t = Vector3::Dot(v0v2, qvec) * invDet;
 			if (t < ray.min || t > ray.max || hitRecord.t < t) return false;
 
+			hitRecord.didHit = true;
 			if (ignoreHitRecord) return true;
 
-			hitRecord.didHit = true;
 			hitRecord.normal = triangle.normal;
 			hitRecord.t = t;
 			hitRecord.origin = ray.origin + ray.direction * t;
 			hitRecord.materialIndex = triangle.materialIndex;
 			return true;
-#else
-			hitRecord.didHit = false;
+#else // Does not work with BVH
+			// hitRecord.didHit = false;
 
 			TriangleCullMode cullMode{ triangle.cullMode };
 			// Flip cull mode for shadow rays
@@ -202,7 +200,7 @@ namespace dae
 			const Vector3 viewToCenter{ triangleCenter - ray.origin };
 			const float t = Vector3::Dot(viewToCenter, triangle.normal) / Vector3::Dot(ray.direction, triangle.normal);
 
-			if (t >= ray.max || t <= ray.min) return false;
+			if (t >= ray.max || t <= ray.min || hitRecord.t < t) return false;
 
 			const Vector3 intersection = ray.origin + (ray.direction * t);
 
