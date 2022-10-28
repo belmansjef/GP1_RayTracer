@@ -13,22 +13,22 @@ namespace dae
 	namespace GeometryUtils
 	{
 #pragma region SlabTest
-		inline bool SlabTest_TriangleMesh(const TriangleMesh& mesh, const Ray& ray)
+		inline bool SlabTest(const Vector3& minAABB, const Vector3& maxABBB, const Ray& ray)
 		{
-			float tx1 = (mesh.transformedMinAABB.x - ray.origin.x) / ray.direction.x;
-			float tx2 = (mesh.transformedMaxAABB.x - ray.origin.x) / ray.direction.x;
+			float tx1 = (minAABB.x - ray.origin.x) / ray.direction.x;
+			float tx2 = (maxABBB.x - ray.origin.x) / ray.direction.x;
 
 			float tmin = std::min(tx1, tx2);
 			float tmax = std::max(tx1, tx2);
 
-			float ty1 = (mesh.transformedMinAABB.y - ray.origin.y) / ray.direction.y;
-			float ty2 = (mesh.transformedMaxAABB.y - ray.origin.y) / ray.direction.y;
+			float ty1 = (minAABB.y - ray.origin.y) / ray.direction.y;
+			float ty2 = (maxABBB.y - ray.origin.y) / ray.direction.y;
 
 			tmin = std::max(tmin, std::min(ty1, ty2));
 			tmax = std::min(tmax, std::max(ty1, ty2));
 
-			float tz1 = (mesh.transformedMinAABB.z - ray.origin.z) / ray.direction.z;
-			float tz2 = (mesh.transformedMaxAABB.z - ray.origin.z) / ray.direction.z;
+			float tz1 = (minAABB.z - ray.origin.z) / ray.direction.z;
+			float tz2 = (maxABBB.z - ray.origin.z) / ray.direction.z;
 
 			tmin = std::max(tmin, std::min(tz1, tz2));
 			tmax = std::min(tmax, std::max(tz1, tz2));
@@ -73,20 +73,19 @@ namespace dae
 			return false;
 #elif defined(Analytic)
 			const Vector3 rayToShpere = ray.origin - sphere.origin;
-			const float A = Vector3::Dot(ray.direction, ray.direction);
 			const float B = 2.f * Vector3::Dot(ray.direction, (rayToShpere));
 			const float C = Vector3::Dot(rayToShpere, rayToShpere) - (sphere.radius * sphere.radius);
 
-			const float discriminant{ (B * B) - (4.f * A * C) };
+			const float discriminant{ (B * B) - (4.f * C) };
 
 			if (discriminant < 0) return false;
 
 			const float sqrtDiscriminant = Sqrt_Intrin(discriminant);
-			float t = (-B - sqrtDiscriminant) / (2.f * A);
+			float t = (-B - sqrtDiscriminant) * 0.5f;
 
 			if (t < ray.min)
 			{
-				t = (-B + sqrtDiscriminant) / (2.f * A);
+				t = (-B + sqrtDiscriminant) * 0.5f;
 			}
 
 			if (t < ray.min || t > ray.max || hitRecord.t < t) return false;
@@ -235,7 +234,7 @@ namespace dae
 #pragma region TriangeMesh HitTest
 		inline bool HitTest_TriangleMesh(const TriangleMesh& mesh, const Ray& ray, HitRecord& hitRecord, bool ignoreHitRecord = false)
 		{
-			if (!SlabTest_TriangleMesh(mesh, ray)) return false;
+			if (!SlabTest(mesh.transformedMinAABB, mesh.transformedMaxAABB, ray)) return false;
 
 			int normalIndex{ 0 };
 			Triangle triangle{};

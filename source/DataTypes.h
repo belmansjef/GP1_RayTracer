@@ -14,6 +14,7 @@ namespace dae
 	{
 		Vector3 origin{};
 		float radius{};
+		Vector3 minAABB, maxAABB;
 
 		unsigned char materialIndex{ 0 };
 	};

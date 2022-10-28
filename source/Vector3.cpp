@@ -130,9 +130,19 @@ namespace dae {
 		return { x + v.x, y + v.y, z + v.z };
 	}
 
+	Vector3 Vector3::operator+(const float& f) const
+	{
+		return { x + f, y + f, z + f };
+	}
+
 	Vector3 Vector3::operator-(const Vector3& v) const
 	{
 		return { x - v.x, y - v.y, z - v.z };
+	}
+
+	Vector3 Vector3::operator-(const float& f) const
+	{
+		return { x - f, y - f, z - f };
 	}
 
 	Vector3 Vector3::operator-() const
