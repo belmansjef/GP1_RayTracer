@@ -11,6 +11,17 @@ namespace dae
 		bool IsLeaf() { return triCount > 0; }
 	};
 
+	struct aabb
+	{
+		Vector3 bmin = { 1e30f, 1e30f, 1e30f }, bmax = {-1e30f, -1e30f, -1e30f};
+		void grow(Vector3 p) { bmin = Vector3::Min(bmin, p), bmax = Vector3::Max(bmax, p); }
+		float area()
+		{
+			Vector3 e = bmax = bmin;
+			return e.x * e.y + e.y * e.z + e.z * e.x;
+		}
+	};
+
 	class BVH
 	{
 	public:
@@ -29,6 +40,7 @@ namespace dae
 	private:
 		void Subdivide(uint64_t nodeIdx);
 		void UpdateNodeBounds(uint64_t nodeIdx);
+		float EvaluateSAH(BVHNode& node, uint8_t axis, float pos);
 		uint64_t m_TriCount;
 	};
 }

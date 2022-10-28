@@ -92,13 +92,34 @@ namespace dae
 	void BVH::Subdivide(uint64_t nodeIdx)
 	{
 		BVHNode& node = m_Nodes[nodeIdx];
-		if (node.triCount < 2) return;
 
-		Vector3 extent = node.aabbMax - node.aabbMin;
+		Vector3 e = node.aabbMax - node.aabbMin;
+		float parentArea = e.x * e.y + e.y * e.z + e.z * e.x;
+		float parentCost = node.triCount * parentArea;
+
+		// if (node.triCount < 2) return;
+
+		int bestAxis = -1;
+		float bestPos = 0.f, bestCost = 1e30f;
+		for (uint8_t axis = 0; axis < 3; axis++) for(uint64_t i = 0; i < node.triCount; i++)
+		{
+			Triangle& triangle = m_pMesh->triangles[m_TriIdx[node.leftNode + i]];
+			float candidatePos = triangle.centroid[axis];
+			float cost = EvaluateSAH(node, axis, candidatePos);
+			if (cost < bestCost)
+				bestPos = candidatePos, bestAxis = axis, bestCost = cost;
+		}
+
+		if (bestCost >= parentCost) return;
+
+		uint8_t axis = bestAxis;
+		float splitPos = bestPos;
+
+		/*Vector3 extent = node.aabbMax - node.aabbMin;
 		int axis = 0;
 		if (extent.y > extent.x) axis = 1;
 		if (extent.z > extent[axis]) axis = 2;
-		float splitPos = (node.aabbMin[axis] + extent[axis]) * 0.5f;
+		float splitPos = (node.aabbMin[axis] + extent[axis]) * 0.5f;*/
 		
 		uint64_t i = node.firstTriIdx;
 		uint64_t j = i + node.triCount - 1;
@@ -144,5 +165,30 @@ namespace dae
 			node.aabbMax = Vector3::Max(node.aabbMax, leafTri.v1);
 			node.aabbMax = Vector3::Max(node.aabbMax, leafTri.v2);
 		}
+	}
+	float BVH::EvaluateSAH(BVHNode& node, uint8_t axis, float pos)
+	{
+		aabb leftBox, rightBox;
+		int leftCount = 0, rightCount = 0;
+		for (uint64_t i = 0; i < node.triCount; i++)
+		{
+			Triangle& triangle = m_pMesh->triangles[m_TriIdx[node.leftNode + i]];
+			if (triangle.centroid[axis] < pos)
+			{
+				leftCount++;
+				leftBox.grow(triangle.v0);
+				leftBox.grow(triangle.v1);
+				leftBox.grow(triangle.v2);
+			}
+			else
+			{
+				rightCount++;
+				rightBox.grow(triangle.v0);
+				rightBox.grow(triangle.v1);
+				rightBox.grow(triangle.v2);
+			}
+		}
+		float cost = leftCount * leftBox.area() + rightCount * rightBox.area();
+		return cost > 0 ? cost : 1e30f;
 	}
 }
