@@ -5,7 +5,7 @@
 #include "Math.h"
 #include "vector"
 
-#define USE_BVH
+#define USE_SSE
 
 namespace dae
 {
@@ -14,7 +14,6 @@ namespace dae
 	{
 		Vector3 origin{};
 		float radius{};
-		Vector3 minAABB, maxAABB;
 
 		unsigned char materialIndex{ 0 };
 	};
@@ -272,7 +271,7 @@ namespace dae
 	};
 #pragma endregion
 #pragma region MISC
-#ifdef USE_BVH
+#ifdef USE_SSE
 	struct Ray
 	{
 		Ray() { O4 = D4 = rD4 = _mm_set1_ps(1); min = 0.0001f; max = FLT_MAX; }
@@ -283,12 +282,11 @@ namespace dae
 
 	struct HitRecord
 	{
-		Vector3 origin{};
-		Vector3 normal{};
-		float t = FLT_MAX;
+		HitRecord() { O4 = N4 = _mm_set1_ps(1); t = FLT_MAX; }
+		union{ struct { Vector3 origin; int materialIndex; }; __m128 O4; };
+		union{ struct { Vector3 normal; float t; }; __m128 N4; };
 
-		bool didHit{ false };
-		unsigned char materialIndex{ 0 };
+		bool didHit = false;
 	};
 #else
 	struct Ray

@@ -6,9 +6,7 @@ namespace dae
 	struct BVHNode
 	{
 		BVHNode();
-		/*Vector3 aabbMin, aabbMax;
-		uint64_t leftNode, firstTriIdx, triCount;*/
-
+		
 		union
 		{
 			struct { Vector3 aabbMin; uint64_t firstTriIdx; };

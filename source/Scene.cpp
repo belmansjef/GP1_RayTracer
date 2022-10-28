@@ -98,8 +98,6 @@ namespace dae {
 		s.origin = origin;
 		s.radius = radius;
 		s.materialIndex = materialIndex;
-		s.minAABB = s.origin - radius;
-		s.maxAABB = s.origin + radius;
 
 		m_SphereGeometries.emplace_back(s);
 		return &m_SphereGeometries.back();

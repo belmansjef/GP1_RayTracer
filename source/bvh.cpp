@@ -27,6 +27,7 @@ namespace dae
 		else return 1e30f;
 	}
 
+#ifdef USE_SSE
 	float IntersectAABB_SSE(const Ray& ray, const __m128 bmin4, const __m128 bmax4)
 	{
 		static __m128 mask4 = _mm_cmpeq_ps(_mm_setzero_ps(), _mm_set_ps(1, 0, 0, 0));
@@ -37,6 +38,9 @@ namespace dae
 		float tmin = std::max(vmin4.m128_f32[0], std::max(vmin4.m128_f32[1], vmin4.m128_f32[2]));
 		if (tmax >= tmin && tmax > 0) return tmin; else return 1e30f;
 	}
+#endif // USE_SSE
+
+
 
 	BVHNode::BVHNode()
 	{
@@ -96,8 +100,14 @@ namespace dae
 
 			BVHNode* child1 = &m_Nodes[node->leftNode];
 			BVHNode* child2 = &m_Nodes[node->leftNode + 1];
+#ifdef USE_SSE
 			float dist1 = IntersectAABB_SSE(ray, child1->aabbMin4, child1->aabbMax4);
 			float dist2 = IntersectAABB_SSE(ray, child2->aabbMin4, child2->aabbMax4);
+#else
+			float dist1 = IntersectAABB(ray, child1->aabbMin, child1->aabbMax);
+			float dist2 = IntersectAABB(ray, child2->aabbMin, child2->aabbMax);
+#endif
+			
 			if (dist1 > dist2) { std::swap(dist1, dist2); std::swap(child1, child2); }
 			if (dist1 == 1e30f)
 			{
@@ -130,8 +140,6 @@ namespace dae
 		float parentArea = e.x * e.y + e.y * e.z + e.z * e.x;
 		float parentCost = node.triCount * parentArea;
 
-		// if (node.triCount < 2) return;
-
 		int bestAxis = -1;
 		float bestPos = 0.f, bestCost = 1e30f;
 		for (uint8_t axis = 0; axis < 3; axis++) for(uint64_t i = 0; i < node.triCount; i++)
@@ -147,12 +155,6 @@ namespace dae
 
 		uint8_t axis = bestAxis;
 		float splitPos = bestPos;
-
-		/*Vector3 extent = node.aabbMax - node.aabbMin;
-		int axis = 0;
-		if (extent.y > extent.x) axis = 1;
-		if (extent.z > extent[axis]) axis = 2;
-		float splitPos = (node.aabbMin[axis] + extent[axis]) * 0.5f;*/
 		
 		uint64_t i = node.firstTriIdx;
 		uint64_t j = i + node.triCount - 1;
