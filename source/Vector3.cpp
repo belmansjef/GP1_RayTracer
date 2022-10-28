@@ -104,6 +104,11 @@ namespace dae {
 		};
 	}
 
+	Vector3 Vector3::Reciprocal(const Vector3& v1)
+	{
+		return { 1 / v1.x, 1 / v1.y, 1 / v1.z };
+	}
+
 	Vector4 Vector3::ToPoint4() const
 	{
 		return { x, y, z, 1 };

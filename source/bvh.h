@@ -5,8 +5,25 @@ namespace dae
 {
 	struct BVHNode
 	{
-		Vector3 aabbMin, aabbMax;
-		uint64_t leftNode, firstTriIdx, triCount;
+		BVHNode();
+		/*Vector3 aabbMin, aabbMax;
+		uint64_t leftNode, firstTriIdx, triCount;*/
+
+		union
+		{
+			struct { Vector3 aabbMin; uint64_t firstTriIdx; };
+			__m128 aabbMin4;
+		};
+		union
+		{
+			struct { Vector3 aabbMax; uint64_t triCount; };
+			__m128 aabbMax4;
+		};
+		union
+		{
+			struct { Vector3 dummy1; uint64_t leftNode; };
+			__m128 dummy;
+		};
 
 		bool IsLeaf() { return triCount > 0; }
 	};

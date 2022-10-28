@@ -272,10 +272,30 @@ namespace dae
 	};
 #pragma endregion
 #pragma region MISC
+#ifdef USE_BVH
+	struct Ray
+	{
+		Ray() { O4 = D4 = rD4 = _mm_set1_ps(1); min = 0.0001f; max = FLT_MAX; }
+		union { struct { Vector3 origin; float min; }; __m128 O4; };
+		union { struct { Vector3 direction; float max; }; __m128 D4; };
+		union { struct { Vector3 rD; float dummy3; }; __m128 rD4; };;
+	};
+
+	struct HitRecord
+	{
+		Vector3 origin{};
+		Vector3 normal{};
+		float t = FLT_MAX;
+
+		bool didHit{ false };
+		unsigned char materialIndex{ 0 };
+	};
+#else
 	struct Ray
 	{
 		Vector3 origin{};
 		Vector3 direction{};
+		Vector3 rD{};
 
 		float min{ 0.0001f };
 		float max{ FLT_MAX };
@@ -290,5 +310,6 @@ namespace dae
 		bool didHit{ false };
 		unsigned char materialIndex{ 0 };
 	};
+#endif
 #pragma endregion
 }

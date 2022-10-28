@@ -3,27 +3,44 @@
 
 namespace dae
 {
-	inline bool IntersectAABB(const Ray& ray, const Vector3& bmin, const Vector3& bmax)
+	float IntersectAABB(const Ray& ray, const Vector3& bmin, const Vector3& bmax)
 	{
-		float tx1 = (bmin.x - ray.origin.x) / ray.direction.x;
-		float tx2 = (bmax.x - ray.origin.x) / ray.direction.x;
+		float tx1 = (bmin.x - ray.origin.x) * ray.rD.x;
+		float tx2 = (bmax.x - ray.origin.x) * ray.rD.x;
 
 		float tmin = std::min(tx1, tx2);
 		float tmax = std::max(tx1, tx2);
 
-		float ty1 = (bmin.y - ray.origin.y) / ray.direction.y;
-		float ty2 = (bmax.y - ray.origin.y) / ray.direction.y;
+		float ty1 = (bmin.y - ray.origin.y) * ray.rD.y;
+		float ty2 = (bmax.y - ray.origin.y) * ray.rD.y;
 
 		tmin = std::max(tmin, std::min(ty1, ty2));
 		tmax = std::min(tmax, std::max(ty1, ty2));
 
-		float tz1 = (bmin.z - ray.origin.z) / ray.direction.z;
-		float tz2 = (bmax.z - ray.origin.z) / ray.direction.z;
+		float tz1 = (bmin.z - ray.origin.z) * ray.rD.z;
+		float tz2 = (bmax.z - ray.origin.z) * ray.rD.z;
 
 		tmin = std::max(tmin, std::min(tz1, tz2));
 		tmax = std::min(tmax, std::max(tz1, tz2));
 
-		return tmax > 0 && tmax >= tmin;
+		if (tmax > 0 && tmax >= tmin) return tmin;
+		else return 1e30f;
+	}
+
+	float IntersectAABB_SSE(const Ray& ray, const __m128 bmin4, const __m128 bmax4)
+	{
+		static __m128 mask4 = _mm_cmpeq_ps(_mm_setzero_ps(), _mm_set_ps(1, 0, 0, 0));
+		__m128 t1 = _mm_mul_ps(_mm_sub_ps(_mm_and_ps(bmin4, mask4), ray.O4), ray.rD4);
+		__m128 t2 = _mm_mul_ps(_mm_sub_ps(_mm_and_ps(bmax4, mask4), ray.O4), ray.rD4);
+		__m128 vmax4 = _mm_max_ps(t1, t2), vmin4 = _mm_min_ps(t1, t2);
+		float tmax = std::min(vmax4.m128_f32[0], std::min(vmax4.m128_f32[1], vmax4.m128_f32[2]));
+		float tmin = std::max(vmin4.m128_f32[0], std::max(vmin4.m128_f32[1], vmin4.m128_f32[2]));
+		if (tmax >= tmin && tmax > 0) return tmin; else return 1e30f;
+	}
+
+	BVHNode::BVHNode()
+	{
+
 	}
 
 	BVH::BVH(TriangleMesh* mesh)
@@ -55,26 +72,42 @@ namespace dae
 
 	void BVH::IntersectBVH(const Ray& ray, HitRecord& hitRecord, bool ignoreHitRecord, uint64_t nodeIdx)
 	{
-		BVHNode& node = m_Nodes[nodeIdx];
-		if (!IntersectAABB(ray, node.aabbMin, node.aabbMax)) return;
-		if (node.IsLeaf())
+		BVHNode* node = &m_Nodes[rootNodeIdx], *stack[64];
+		uint8_t stackPtr = 0;
+		while (1)
 		{
-			for (uint8_t i = 0; i < node.triCount; i++)
+			if (node->IsLeaf())
 			{
-				if (ignoreHitRecord)
+				for (uint64_t i = 0; i < node->triCount; i++)
 				{
-					if (GeometryUtils::HitTest_Triangle(m_pMesh->triangles[m_TriIdx[node.firstTriIdx + i]], ray, hitRecord, ignoreHitRecord)) return;
+					if (ignoreHitRecord)
+					{
+						if (GeometryUtils::HitTest_Triangle(m_pMesh->triangles[m_TriIdx[node->firstTriIdx + i]], ray, hitRecord, ignoreHitRecord)) return;
+					}
+					else
+					{
+						GeometryUtils::HitTest_Triangle(m_pMesh->triangles[m_TriIdx[node->firstTriIdx + i]], ray, hitRecord);
+					}
 				}
-				else
-				{
-					GeometryUtils::HitTest_Triangle(m_pMesh->triangles[m_TriIdx[node.firstTriIdx + i]], ray, hitRecord);
-				}
+				if (stackPtr == 0) break; else node = stack[--stackPtr];
+
+				continue;
+			} // IsLeaf
+
+			BVHNode* child1 = &m_Nodes[node->leftNode];
+			BVHNode* child2 = &m_Nodes[node->leftNode + 1];
+			float dist1 = IntersectAABB_SSE(ray, child1->aabbMin4, child1->aabbMax4);
+			float dist2 = IntersectAABB_SSE(ray, child2->aabbMin4, child2->aabbMax4);
+			if (dist1 > dist2) { std::swap(dist1, dist2); std::swap(child1, child2); }
+			if (dist1 == 1e30f)
+			{
+				if (stackPtr == 0) break; else node = stack[--stackPtr];
 			}
-		}
-		else
-		{
-			IntersectBVH(ray, hitRecord, ignoreHitRecord, node.leftNode);
-			IntersectBVH(ray, hitRecord, ignoreHitRecord, node.leftNode + 1);
+			else
+			{
+				node = child1;
+				if (dist2 != 1e30f) stack[stackPtr++] = child2;
+			}
 		}
 	}
 

@@ -99,8 +99,8 @@ void Renderer::Render(Scene* pScene) const
 
 void dae::Renderer::RenderPixel(Scene* pScene, uint32_t pixelIndex, const Camera& camera, const std::vector<Light>& lights, const std::vector<Material*>& materials) const
 {
-	const int px = pixelIndex % m_Width;
-	const int py = pixelIndex / m_Width;
+	const uint32_t px = pixelIndex % m_Width;
+	const uint32_t py = pixelIndex / m_Width;
 
 	const float cx{ ((2.f * (px + 0.5f) / static_cast<float>(m_Width)) - 1.f) * m_AspectRatio * camera.fov };
 	const float cy{ (1.f - (2.f * (py + 0.5f) / static_cast<float>(m_Height))) * camera.fov };
@@ -108,7 +108,10 @@ void dae::Renderer::RenderPixel(Scene* pScene, uint32_t pixelIndex, const Camera
 	Vector3 rayDirection = { cx, cy, 1.f };
 	rayDirection = camera.cameraToWorld.TransformVector(rayDirection).Normalized();
 
-	Ray viewRay{ camera.origin, rayDirection };
+	Ray viewRay{};
+	viewRay.origin = camera.origin;
+	viewRay.direction = rayDirection;
+	viewRay.rD = Vector3::Reciprocal(viewRay.direction);
 	ColorRGB finalColor{};
 
 	HitRecord closestHit{};
@@ -124,6 +127,7 @@ void dae::Renderer::RenderPixel(Scene* pScene, uint32_t pixelIndex, const Camera
 			lightRay.min = 0.1f;
 			lightRay.max = lightRay.direction.Magnitude();
 			lightRay.direction.Normalize();
+			lightRay.rD = Vector3::Reciprocal(lightRay.direction);
 
 			if ((m_ShadowsEnabled && pScene->DoesHit(lightRay))) continue;
 
