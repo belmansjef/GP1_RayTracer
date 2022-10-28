@@ -5,6 +5,7 @@
 #include "DataTypes.h"
 
 // #define Geometric
+#define Analytic
 #define Moller
 
 namespace dae
@@ -39,10 +40,7 @@ namespace dae
 		//SPHERE HIT-TESTS
 		inline bool HitTest_Sphere(const Sphere& sphere, const Ray& ray, HitRecord& hitRecord, bool ignoreHitRecord = false)
 		{
-
-#ifdef Geometric
-			hitRecord.didHit = false;
-
+#if defined(Geometric)
 			const Vector3 L = sphere.origin - ray.origin;
 			const float tca = Vector3::Dot(L, ray.direction);
 			if (tca < 0) return false;
@@ -73,33 +71,32 @@ namespace dae
 			}
 
 			return false;
-#else
-			hitRecord.didHit = false;
-
+#elif defined(Analytic)
 			const Vector3 rayToShpere = ray.origin - sphere.origin;
+			const float A = Vector3::Dot(ray.direction, ray.direction);
 			const float B = 2.f * Vector3::Dot(ray.direction, (rayToShpere));
 			const float C = Vector3::Dot(rayToShpere, rayToShpere) - (sphere.radius * sphere.radius);
 
-			const float discriminant{ (B * B) - (4.f * C) };
+			const float discriminant{ (B * B) - (4.f * A * C) };
 
 			if (discriminant < 0) return false;
 
 			const float sqrtDiscriminant = Sqrt_Intrin(discriminant);
-			float t = (-B - sqrtDiscriminant) / 2.f;
+			float t = (-B - sqrtDiscriminant) / (2.f * A);
 
 			if (t < ray.min)
 			{
-				t = (-B + sqrtDiscriminant) / 2.f;
+				t = (-B + sqrtDiscriminant) / (2.f * A);
 			}
 
-			if (t < ray.min || t > ray.max) return false;
+			if (t < ray.min || t > ray.max || hitRecord.t < t) return false;
 			
 			if (ignoreHitRecord) return true;
 
 			hitRecord.didHit = true;
 			hitRecord.materialIndex = sphere.materialIndex;
 			hitRecord.t = t;
-			hitRecord.origin = ray.origin + (t * ray.direction);
+			hitRecord.origin = ray.origin + ray.direction * t;
 			hitRecord.normal = (hitRecord.origin - sphere.origin).Normalized();
 			return true;
 #endif
@@ -115,8 +112,9 @@ namespace dae
 		//PLANE HIT-TESTS
 		inline bool HitTest_Plane(const Plane& plane, const Ray& ray, HitRecord& hitRecord, bool ignoreHitRecord = false)
 		{
-			hitRecord.didHit = false;
 			const float t = (Vector3::Dot((plane.origin - ray.origin), plane.normal)) / Vector3::Dot(ray.direction, plane.normal);
+
+			if (hitRecord.t < t) return false;
 
 			if (t <= ray.max && t >= ray.min)
 			{
@@ -239,9 +237,6 @@ namespace dae
 		{
 			if (!SlabTest_TriangleMesh(mesh, ray)) return false;
 
-			hitRecord.didHit = false;
-
-			HitRecord temp{};
 			int normalIndex{ 0 };
 			Triangle triangle{};
 
@@ -262,16 +257,9 @@ namespace dae
 				triangle.cullMode = mesh.cullMode;
 				triangle.materialIndex = mesh.materialIndex;
 
-				if (GeometryUtils::HitTest_Triangle(triangle, ray, temp, ignoreHitRecord))
+				if (GeometryUtils::HitTest_Triangle(triangle, ray, hitRecord, ignoreHitRecord))
 				{
 					if(ignoreHitRecord) return true;
-					else
-					{
-						if (temp.t < hitRecord.t)
-						{
-							hitRecord = temp;
-						}
-					}
 				}
 			}
 

@@ -35,44 +35,25 @@ namespace dae {
 
 	void dae::Scene::GetClosestHit(const Ray& ray, HitRecord& closestHit) const
 	{
-		HitRecord temp{};
 		for (const Sphere& sphere: m_SphereGeometries)
 		{
-			if (GeometryUtils::HitTest_Sphere(sphere, ray, temp))
-			{
-				if (temp.t < closestHit.t)
-				{
-					closestHit = temp;
-				}
-			}
+			GeometryUtils::HitTest_Sphere(sphere, ray, closestHit);
 		}
 
 		for (const Plane& plane : m_PlaneGeometries)
 		{
-			if (GeometryUtils::HitTest_Plane(plane, ray, temp))
-			{
-				if (temp.t < closestHit.t)
-				{
-					closestHit = temp;
-				}
-			}
+			GeometryUtils::HitTest_Plane(plane, ray, closestHit);
 		}
 
 #ifdef USE_BVH
-		m_pBVH[0]->IntersectBVH(ray, temp, 0);
 
-		if (temp.t < closestHit.t)
-		{
-			closestHit = temp;
-		}
+		for (const auto& bvh : m_pBVH)
+			bvh->IntersectBVH(ray, closestHit, false);
 #else
 		for (const TriangleMesh& triangleMesh : m_TriangleMeshGeometries)
 		{
-			GeometryUtils::HitTest_TriangleMesh(triangleMesh, ray, temp);
+			GeometryUtils::HitTest_TriangleMesh(triangleMesh, ray, closestHit);
 		}
-
-		if (temp.t < closestHit.t)
-			closestHit = temp;
 #endif // USE_BVH
 	}
 
@@ -82,31 +63,28 @@ namespace dae {
 		for (const Sphere& sphere: m_SphereGeometries)
 		{
 			if (GeometryUtils::HitTest_Sphere(sphere, ray))
-			{
 				return true;
-			}
 		}
 
 		for (const Plane& plane : m_PlaneGeometries)
 		{
 			if (GeometryUtils::HitTest_Plane(plane, ray))
-			{
 				return true;
-			}
 		}
 
 #ifdef USE_BVH
 		HitRecord temp{};
-		m_pBVH[0]->IntersectBVH(ray, temp, true);
-		if (temp.didHit) return true;
-
+		for (const auto& bvh : m_pBVH)
+		{
+			bvh->IntersectBVH(ray, temp, true);
+			if (temp.didHit)
+				return true;
+		}
 #else
 		for (const TriangleMesh& triangleMesh : m_TriangleMeshGeometries)
 		{
 			if (GeometryUtils::HitTest_TriangleMesh(triangleMesh, ray))
-			{
 				return true;
-			}
 		}
 #endif // USE_BVH
 
@@ -303,8 +281,14 @@ namespace dae {
 
 		pMesh->Scale({ 0.7f, 0.7f, 0.7f });
 		pMesh->Translate({ 0.f, 1.5f, 0.f });
-
+#ifndef USE_BVH
+		pMesh->UpdateAABB();
+#endif
 		pMesh->UpdateTransforms();
+
+#ifdef USE_BVH
+		m_pBVH.emplace_back(new BVH(pMesh));
+#endif
 
 		//Light
 		AddPointLight(Vector3{ 0.f, 5.f, 5.f }, 50.f, ColorRGB{ 1.f, 0.61f, .45f }); //backLight
@@ -318,6 +302,12 @@ namespace dae {
 
 		pMesh->RotateY(PI_DIV_2 * pTimer->GetTotal());
 		pMesh->UpdateTransforms();
+#ifdef USE_BVH
+		for (const auto& bvh : m_pBVH)
+		{
+			bvh->UpdateAllNodeBounds(0);
+		}
+#endif
 	}
 #pragma endregion
 
@@ -359,20 +349,34 @@ namespace dae {
 		m_Meshes[0] = AddTriangleMesh(TriangleCullMode::BackFaceCulling, matLambert_White);
 		m_Meshes[0]->AppendTriangle(baseTriangle, true);
 		m_Meshes[0]->Translate({ -1.75f, 4.5f, 0.f });
+#ifndef USE_BVH
 		m_Meshes[0]->UpdateAABB();
+#endif // !USE_BVH
 		m_Meshes[0]->UpdateTransforms();
 
 		m_Meshes[1] = AddTriangleMesh(TriangleCullMode::FrontFaceCulling, matLambert_White);
 		m_Meshes[1]->AppendTriangle(baseTriangle, true);
 		m_Meshes[1]->Translate({ 0.f, 4.5f, 0.f });
+#ifndef USE_BVH
 		m_Meshes[1]->UpdateAABB();
+#endif // !USE_BVH
 		m_Meshes[1]->UpdateTransforms();
 
 		m_Meshes[2] = AddTriangleMesh(TriangleCullMode::NoCulling, matLambert_White);
 		m_Meshes[2]->AppendTriangle(baseTriangle, true);
 		m_Meshes[2]->Translate({ 1.75f, 4.5f, 0.f });
+#ifndef USE_BVH
 		m_Meshes[2]->UpdateAABB();
+#endif // !USE_BVH
 		m_Meshes[2]->UpdateTransforms();
+
+#ifdef USE_BVH
+		for (const auto& m : m_Meshes)
+		{
+			m_pBVH.emplace_back(new BVH(m));
+		}
+#endif // USE_BVH
+
 
 		//Light
 		AddPointLight(Vector3{ 0.f, 5.f, 5.f }, 50.f, ColorRGB{ 1.f, 0.61f, .45f });
@@ -390,6 +394,13 @@ namespace dae {
 			mesh->RotateY(yawAngle);
 			mesh->UpdateTransforms();
 		}
+
+#ifdef USE_BVH
+		for (const auto& bvh : m_pBVH)
+		{
+			bvh->UpdateAllNodeBounds(0);
+		}
+#endif
 	}
 #pragma endregion
 
@@ -439,7 +450,12 @@ namespace dae {
 		const auto yawAngle = (cos(pTimer->GetTotal()) + 1.f) / 2.f * PI_2;
 		m_Bunny->RotateY(yawAngle);
 		m_Bunny->UpdateTransforms();
-		m_pBVH[0]->UpdateAllNodeBounds(0);
+#ifdef USE_BVH
+		for (const auto& bvh : m_pBVH)
+		{
+			bvh->UpdateAllNodeBounds(0);
+		}
+#endif
 	}
 #pragma endregion
 }
