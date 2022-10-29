@@ -287,7 +287,7 @@ namespace dae {
 		pMesh->UpdateTransforms();
 
 #ifdef USE_BVH
-		m_pBVH.emplace_back(new BVH(pMesh));
+		m_pBVH.emplace_back(new BVH(*pMesh));
 #endif
 
 		//Light
@@ -373,7 +373,7 @@ namespace dae {
 #ifdef USE_BVH
 		for (const auto& m : m_Meshes)
 		{
-			m_pBVH.emplace_back(new BVH(m));
+			m_pBVH.emplace_back(new BVH(*m));
 		}
 #endif // USE_BVH
 
@@ -436,7 +436,7 @@ namespace dae {
 		
 		m_Bunny->UpdateTransforms();
 
-		m_pBVH.push_back(new BVH(m_Bunny));
+		m_pBVH.push_back(new BVH(*m_Bunny));
 
 		//Light
 		AddPointLight(Vector3{ 0.f, 5.f, 5.f }, 50.f, ColorRGB{ 1.f, 0.61f, .45f });
