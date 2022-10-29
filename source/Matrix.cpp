@@ -102,6 +102,25 @@ namespace dae {
 		return data[3];
 	}
 
+	Matrix Matrix::Inverted() const
+	{
+		Matrix inverted;
+		float determinant{0};
+		for (int i = 0; i < 3; i++)
+		{
+			determinant += (data[0][i] * (data[1][(i + 1) % 3] * data[2][(i + 2) % 3] - data[1][(i + 2) % 3] * data[2][(i + 1) % 3]));
+		}
+		for (int i = 0; i < 3; i++)
+		{
+			for (int j = 0; j < 3; j++)
+			{
+				inverted[i][j] = ((data[(j + 1) % 3][(i + 1) % 3] * data[(j + 2) % 3][(i + 2) % 3]) - (data[(j + 1) % 3][(i + 2) % 3] * data[(j + 2) % 3][(i + 1) % 3])) / determinant;
+			}
+		}
+
+		return inverted;
+	}
+
 	Matrix Matrix::CreateTranslation(float x, float y, float z)
 	{
 		return CreateTranslation({x, y ,z});

@@ -174,4 +174,20 @@ void dae::Renderer::CycleLightingMode()
 {
 	m_CurrentLightingMode = static_cast<LightingMode>(
 		(static_cast<int>(m_CurrentLightingMode) + 1) % 4);
+
+	switch (m_CurrentLightingMode)
+	{
+	case dae::Renderer::LightingMode::ObservedArea:
+		std::cout << "[LIGHTING MODE] Observed Area\n";
+		break;
+	case dae::Renderer::LightingMode::Radiance:
+		std::cout << "[LIGHTING MODE] Radiance\n";
+		break;
+	case dae::Renderer::LightingMode::BRDF:
+		std::cout << "[LIGHTING MODE] BRDF\n";
+		break;
+	case dae::Renderer::LightingMode::Combined:
+		std::cout << "[LIGHTING MODE] Combined\n";
+		break;
+	}
 }

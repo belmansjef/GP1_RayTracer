@@ -30,7 +30,7 @@ namespace dae
 		bool SaveBufferToImage() const;
 
 		void CycleLightingMode();
-		void ToggleShadows() { m_ShadowsEnabled = !m_ShadowsEnabled; }
+		void ToggleShadows() { m_ShadowsEnabled = !m_ShadowsEnabled; if (m_ShadowsEnabled) std::cout << "[SHADOWS] ON\n"; else std::cout << "[SHADOWS] OFF\n"; }
 
 	private:
 

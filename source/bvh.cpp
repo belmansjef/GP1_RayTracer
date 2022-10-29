@@ -138,6 +138,20 @@ namespace dae
 		}
 	}
 
+	void BVH::SetTransform(Matrix& transform)
+	{
+		invTransform = transform.Inverted();
+		// calculate world-space bounds using the new matrix
+		Vector3 bmin = m_Nodes[0].aabbMin, bmax = m_Nodes[0].aabbMax;
+		bounds = aabb();
+		for (int i = 0; i < 8; i++)
+		{
+			Vector3 position{ i & 1 ? bmax.x : bmin.x, i & 2 ? bmax.y : bmin.y, i & 4 ? bmax.z : bmin.z };
+			bounds.grow(transform.TransformPoint(position));
+		}
+			
+	}
+
 	void BVH::Subdivide(uint64_t nodeIdx)
 	{
 		BVHNode& node = m_Nodes[nodeIdx];

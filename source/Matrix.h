@@ -30,6 +30,7 @@ namespace dae {
 		Vector3 GetAxisY() const;
 		Vector3 GetAxisZ() const;
 		Vector3 GetTranslation() const;
+		Matrix Inverted() const;
 
 		static Matrix CreateTranslation(float x, float y, float z);
 		static Matrix CreateTranslation(const Vector3& t);

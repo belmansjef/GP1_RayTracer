@@ -11,7 +11,6 @@ namespace dae
 		
 		union { struct { Vector3 aabbMin; uint64_t leftFirst; }; __m128 aabbMin4; };
 		union { struct { Vector3 aabbMax; uint64_t triCount; }; __m128 aabbMax4; };
-
 		bool IsLeaf() const { return triCount > 0; }
 		float CalculateNodeCost()
 		{
@@ -41,6 +40,7 @@ namespace dae
 		void Build();
 		void Intersect(const Ray& ray, HitRecord& hitRecord, bool ignoreHitRecord = false, uint64_t nodeIdx = 0);
 		void Refit();
+		void SetTransform(Matrix& transform);
 
 	private:
 		void Subdivide(uint64_t nodeIdx);
@@ -51,5 +51,8 @@ namespace dae
 		Triangle* m_Triangles = 0;
 		uint64_t* m_TriIdx = 0;
 		uint64_t m_NodesUsed = 1, m_TriCount;
+
+		Matrix invTransform;
+		aabb bounds;
 	};
 }
