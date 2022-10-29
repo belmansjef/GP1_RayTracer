@@ -6,6 +6,7 @@
 #include "vector"
 
 #define USE_SSE
+#define USE_BVH
 
 namespace dae
 {

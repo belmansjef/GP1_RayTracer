@@ -1,7 +1,7 @@
 #pragma once
 #include "DataTypes.h"
 
-#define BINS 3
+#define BINS 4
 
 namespace dae
 {
@@ -9,9 +9,8 @@ namespace dae
 	{
 		BVHNode(){};
 		
-		union { struct { Vector3 aabbMin; uint64_t firstTriIdx; }; __m128 aabbMin4; };
+		union { struct { Vector3 aabbMin; uint64_t leftFirst; }; __m128 aabbMin4; };
 		union { struct { Vector3 aabbMax; uint64_t triCount; }; __m128 aabbMax4; };
-		union { struct { Vector3 dummy1; uint64_t leftNode; }; __m128 dummy; };
 
 		bool IsLeaf() const { return triCount > 0; }
 		float CalculateNodeCost()
@@ -33,8 +32,6 @@ namespace dae
 		}
 	};
 
-	struct Bin { aabb bounds; uint64_t triCount = 0; };
-
 	class BVH
 	{
 	public:
@@ -49,7 +46,6 @@ namespace dae
 		void Subdivide(uint64_t nodeIdx);
 		void UpdateNodeBounds(uint64_t nodeIdx);
 		float FindBestSplitPlane(BVHNode& node, uint8_t& axis, float& splitPos);
-		float CalculateNodeCost(BVHNode& node);
 
 		BVHNode* m_Nodes = 0;
 		Triangle* m_Triangles = 0;

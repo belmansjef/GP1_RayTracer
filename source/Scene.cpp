@@ -433,10 +433,11 @@ namespace dae {
 #ifndef USE_BVH
 		m_Bunny->UpdateAABB();
 #endif // !USE_BVH
-		
 		m_Bunny->UpdateTransforms();
 
+#ifdef USE_BVH
 		m_pBVH.push_back(new BVH(*m_Bunny));
+#endif // USE_BVH
 
 		//Light
 		AddPointLight(Vector3{ 0.f, 5.f, 5.f }, 50.f, ColorRGB{ 1.f, 0.61f, .45f });

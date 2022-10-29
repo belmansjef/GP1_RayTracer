@@ -62,7 +62,7 @@ namespace dae
 		auto start = high_resolution_clock::now();
 
 		BVHNode& root = m_Nodes[0];
-		root.leftNode = root.firstTriIdx = 0;
+		root.leftFirst = 0;
 		root.triCount = m_TriCount;
 		UpdateNodeBounds(0);
 		Subdivide(0);
@@ -84,11 +84,11 @@ namespace dae
 				{
 					if (ignoreHitRecord)
 					{
-						if (GeometryUtils::HitTest_Triangle(m_Triangles[m_TriIdx[node->firstTriIdx + i]], ray, hitRecord, ignoreHitRecord)) return;
+						if (GeometryUtils::HitTest_Triangle(m_Triangles[m_TriIdx[node->leftFirst + i]], ray, hitRecord, ignoreHitRecord)) return;
 					}
 					else
 					{
-						GeometryUtils::HitTest_Triangle(m_Triangles[m_TriIdx[node->firstTriIdx + i]], ray, hitRecord);
+						GeometryUtils::HitTest_Triangle(m_Triangles[m_TriIdx[node->leftFirst + i]], ray, hitRecord);
 					}
 				}
 				if (stackPtr == 0) break; else node = stack[--stackPtr];
@@ -96,8 +96,8 @@ namespace dae
 				continue;
 			} // IsLeaf
 
-			BVHNode* child1 = &m_Nodes[node->leftNode];
-			BVHNode* child2 = &m_Nodes[node->leftNode + 1];
+			BVHNode* child1 = &m_Nodes[node->leftFirst];
+			BVHNode* child2 = &m_Nodes[node->leftFirst + 1];
 #ifdef USE_SSE
 			float dist1 = IntersectAABB_SSE(ray, child1->aabbMin4, child1->aabbMax4);
 			float dist2 = IntersectAABB_SSE(ray, child2->aabbMin4, child2->aabbMax4);
@@ -131,8 +131,8 @@ namespace dae
 				continue;
 			}
 			// interior node: adjust bounds to child node bounds
-			BVHNode& leftChild = m_Nodes[node.leftNode];
-			BVHNode& rightChild = m_Nodes[node.leftNode + 1];
+			BVHNode& leftChild = m_Nodes[node.leftFirst];
+			BVHNode& rightChild = m_Nodes[node.leftFirst + 1];
 			node.aabbMin = Vector3::Min(leftChild.aabbMin, rightChild.aabbMin);
 			node.aabbMax = Vector3::Max(leftChild.aabbMax, rightChild.aabbMax);
 		}
@@ -149,7 +149,7 @@ namespace dae
 		if (splitCost >= nosplitCost) return;
 		
 		// Rearange tri's
-		uint64_t i = node.firstTriIdx;
+		uint64_t i = node.leftFirst;
 		uint64_t j = i + node.triCount - 1;
 		while (i <= j)
 		{
@@ -159,16 +159,16 @@ namespace dae
 				std::swap(m_TriIdx[i], m_TriIdx[j--]);
 		}
 
-		uint64_t leftCount = i - node.firstTriIdx;
+		uint64_t leftCount = i - node.leftFirst;
 		if (leftCount == 0 || leftCount == node.triCount) return;
 
 		uint64_t leftChildIdx = m_NodesUsed++;
 		uint64_t rightChildIdx = m_NodesUsed++;
-		node.leftNode = leftChildIdx;
-		m_Nodes[leftChildIdx].firstTriIdx = node.firstTriIdx;
+		m_Nodes[leftChildIdx].leftFirst = node.leftFirst;
 		m_Nodes[leftChildIdx].triCount = leftCount;
-		m_Nodes[rightChildIdx].firstTriIdx = i;
+		m_Nodes[rightChildIdx].leftFirst = i;
 		m_Nodes[rightChildIdx].triCount = node.triCount - leftCount;
+		node.leftFirst = leftChildIdx;
 		node.triCount = 0;
 
 		UpdateNodeBounds(leftChildIdx);
@@ -182,7 +182,7 @@ namespace dae
 		BVHNode& node = m_Nodes[nodeIdx];
 		node.aabbMin = Vector3({ INFINITY, INFINITY, INFINITY });
 		node.aabbMax = Vector3({ -INFINITY, -INFINITY, -INFINITY });
-		for (uint64_t first = node.firstTriIdx, i = 0; i < node.triCount; i++)
+		for (uint64_t first = node.leftFirst, i = 0; i < node.triCount; i++)
 		{
 			uint64_t leafTriIdx = m_TriIdx[first + i];
 			Triangle& leafTri = m_Triangles[leafTriIdx];
@@ -203,17 +203,17 @@ namespace dae
 			float boundsMin = 1e30f, boundsMax = -1e30f;
 			for (uint64_t i = 0; i < node.triCount; i++)
 			{
-				Triangle& triangle = m_Triangles[m_TriIdx[node.firstTriIdx + i]];
+				Triangle& triangle = m_Triangles[m_TriIdx[node.leftFirst + i]];
 				boundsMin = std::min(boundsMin, triangle.centroid[a]);
 				boundsMax = std::max(boundsMax, triangle.centroid[a]);
 			}
 			if (boundsMin == boundsMax) continue;
 			// Populate bins
-			Bin bin[BINS];
+			struct Bin { aabb bounds; uint64_t triCount = 0; } bin[BINS];
 			float scale = BINS / (boundsMax - boundsMin);
 			for (uint64_t i = 0; i < node.triCount; i++)
 			{
-				Triangle& triangle = m_Triangles[m_TriIdx[node.firstTriIdx + i]];
+				Triangle& triangle = m_Triangles[m_TriIdx[node.leftFirst + i]];
 				uint64_t binIdx = std::min(BINS - 1,
 					(int)((triangle.centroid[a] - boundsMin) * scale));
 				bin[binIdx].triCount++;
