@@ -89,7 +89,7 @@ int main(int argc, char* args[])
 		if (printTimer >= 1.f)
 		{
 			printTimer = 0.f;
-			std::cout << "dFPS: " << pTimer->GetdFPS() << std::endl;
+			std::cout << "dFPS: " << pTimer->GetdFPS() << "\n";
 		}
 
 		//Save screenshot after full render

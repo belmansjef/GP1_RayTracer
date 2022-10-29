@@ -48,7 +48,7 @@ namespace dae {
 #ifdef USE_BVH
 
 		for (const auto& bvh : m_pBVH)
-			bvh->IntersectBVH(ray, closestHit, false);
+			bvh->Intersect(ray, closestHit, false);
 #else
 		for (const TriangleMesh& triangleMesh : m_TriangleMeshGeometries)
 		{
@@ -76,7 +76,7 @@ namespace dae {
 		HitRecord temp{};
 		for (const auto& bvh : m_pBVH)
 		{
-			bvh->IntersectBVH(ray, temp, true);
+			bvh->Intersect(ray, temp, true);
 			if (temp.didHit)
 				return true;
 		}
@@ -305,7 +305,7 @@ namespace dae {
 #ifdef USE_BVH
 		for (const auto& bvh : m_pBVH)
 		{
-			bvh->UpdateAllNodeBounds(0);
+			bvh->Refit();
 		}
 #endif
 	}
@@ -398,7 +398,7 @@ namespace dae {
 #ifdef USE_BVH
 		for (const auto& bvh : m_pBVH)
 		{
-			bvh->UpdateAllNodeBounds(0);
+			bvh->Refit();
 		}
 #endif
 	}
@@ -453,7 +453,7 @@ namespace dae {
 #ifdef USE_BVH
 		for (const auto& bvh : m_pBVH)
 		{
-			bvh->UpdateAllNodeBounds(0);
+			bvh->Refit();
 		}
 #endif
 	}

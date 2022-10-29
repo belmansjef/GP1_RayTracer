@@ -5,9 +5,13 @@
 
 #include <iostream>
 #include <fstream>
+#include <sstream>
+
+#include <chrono>
 
 #include "SDL.h"
 using namespace dae;
+using namespace std;
 
 Timer::Timer()
 {

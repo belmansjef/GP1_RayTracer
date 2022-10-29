@@ -1,6 +1,11 @@
 #include "bvh.h"
 #include "Utils.h"
 
+#include <chrono>
+#include <ctime>
+
+using namespace std::chrono;
+
 namespace dae
 {
 	float IntersectAABB(const Ray& ray, const Vector3& bmin, const Vector3& bmax)
@@ -56,6 +61,7 @@ namespace dae
 
 	void BVH::Build()
 	{
+		auto start = high_resolution_clock::now();
 		m_TriIdx.reserve(m_TriCount);
 		m_Nodes.reserve(m_TriCount * 2 - 1);
 		for (int i = 0; i < m_TriCount; i++)
@@ -72,9 +78,13 @@ namespace dae
 		root.triCount = m_TriCount;
 		UpdateNodeBounds(rootNodeIdx);
 		Subdivide(rootNodeIdx);
+		auto end = high_resolution_clock::now();
+
+		auto elapsedSeconds = duration_cast<microseconds>(end - start);
+		std::cout << "Finished building BVH.\tElapsed time: " << elapsedSeconds.count() << "ms\n";
 	}
 
-	void BVH::IntersectBVH(const Ray& ray, HitRecord& hitRecord, bool ignoreHitRecord, uint64_t nodeIdx)
+	void BVH::Intersect(const Ray& ray, HitRecord& hitRecord, bool ignoreHitRecord, uint64_t nodeIdx)
 	{
 		BVHNode* node = &m_Nodes[rootNodeIdx], *stack[64];
 		uint8_t stackPtr = 0;
@@ -121,41 +131,36 @@ namespace dae
 		}
 	}
 
-	void BVH::UpdateAllNodeBounds(uint64_t nodeIdx)
+	void BVH::Refit()
 	{
-		BVHNode& node = m_Nodes[nodeIdx];
-		UpdateNodeBounds(nodeIdx);
-
-		if (node.IsLeaf()) return;
-
-		UpdateAllNodeBounds(node.leftNode);
-		UpdateAllNodeBounds(node.leftNode + 1);
+		for (int i = nodesUsed - 1; i >= 0; i--) if (i != 1)
+		{
+			BVHNode& node = m_Nodes[i];
+			if (node.IsLeaf())
+			{
+				// leaf node: adjust bounds to contained triangles
+				UpdateNodeBounds(i);
+				continue;
+			}
+			// interior node: adjust bounds to child node bounds
+			BVHNode& leftChild = m_Nodes[node.leftNode];
+			BVHNode& rightChild = m_Nodes[node.leftNode + 1];
+			node.aabbMin = Vector3::Min(leftChild.aabbMin, rightChild.aabbMin);
+			node.aabbMax = Vector3::Max(leftChild.aabbMax, rightChild.aabbMax);
+		}
 	}
 
 	void BVH::Subdivide(uint64_t nodeIdx)
 	{
 		BVHNode& node = m_Nodes[nodeIdx];
 
-		Vector3 e = node.aabbMax - node.aabbMin;
-		float parentArea = e.x * e.y + e.y * e.z + e.z * e.x;
-		float parentCost = node.triCount * parentArea;
-
-		int bestAxis = -1;
-		float bestPos = 0.f, bestCost = 1e30f;
-		for (uint8_t axis = 0; axis < 3; axis++) for(uint64_t i = 0; i < node.triCount; i++)
-		{
-			Triangle& triangle = m_pMesh->triangles[m_TriIdx[node.leftNode + i]];
-			float candidatePos = triangle.centroid[axis];
-			float cost = EvaluateSAH(node, axis, candidatePos);
-			if (cost < bestCost)
-				bestPos = candidatePos, bestAxis = axis, bestCost = cost;
-		}
-
-		if (bestCost >= parentCost) return;
-
-		uint8_t axis = bestAxis;
-		float splitPos = bestPos;
+		uint8_t axis;
+		float splitPos;
+		float splitCost = FindBestSplitPlane(node, axis, splitPos);
+		float nosplitCost = CalculateNodeCost(node);
+		if (splitCost >= nosplitCost) return;
 		
+		// Rearange tri's
 		uint64_t i = node.firstTriIdx;
 		uint64_t j = i + node.triCount - 1;
 		while (i <= j)
@@ -201,29 +206,66 @@ namespace dae
 			node.aabbMax = Vector3::Max(node.aabbMax, leafTri.v2);
 		}
 	}
-	float BVH::EvaluateSAH(BVHNode& node, uint8_t axis, float pos)
+
+	float BVH::FindBestSplitPlane(BVHNode& node, uint8_t& axis, float& splitPos)
 	{
-		aabb leftBox, rightBox;
-		int leftCount = 0, rightCount = 0;
-		for (uint64_t i = 0; i < node.triCount; i++)
+		float bestCost = 1e30f;
+		for (uint8_t a = 0; a < 3; a++)
 		{
-			Triangle& triangle = m_pMesh->triangles[m_TriIdx[node.leftNode + i]];
-			if (triangle.centroid[axis] < pos)
+			float boundsMin = 1e30f, boundsMax = -1e30f;
+			for (uint64_t i = 0; i < node.triCount; i++)
 			{
-				leftCount++;
-				leftBox.grow(triangle.v0);
-				leftBox.grow(triangle.v1);
-				leftBox.grow(triangle.v2);
+				Triangle& triangle = m_pMesh->triangles[m_TriIdx[node.leftNode + i]];
+				boundsMin = std::min(boundsMin, triangle.centroid[a]);
+				boundsMax = std::max(boundsMax, triangle.centroid[a]);
 			}
-			else
+			if (boundsMin == boundsMax) continue;
+			// Populate bins
+			Bin bin[BINS];
+			float scale = BINS / (boundsMax - boundsMin);
+			for (uint64_t i = 0; i < node.triCount; i++)
 			{
-				rightCount++;
-				rightBox.grow(triangle.v0);
-				rightBox.grow(triangle.v1);
-				rightBox.grow(triangle.v2);
+				Triangle& triangle = m_pMesh->triangles[m_TriIdx[node.leftNode + i]];
+				uint64_t binIdx = std::min(BINS - 1,
+					(int)((triangle.centroid[a] - boundsMin) * scale));
+				bin[binIdx].triCount++;
+				bin[binIdx].bounds.grow(triangle.v0);
+				bin[binIdx].bounds.grow(triangle.v1);
+				bin[binIdx].bounds.grow(triangle.v2);
+			}
+			// Gather data for the planes between the bins
+			float leftArea[BINS - 1], rightArea[BINS - 1];
+			uint64_t leftCount[BINS - 1], rightCount[BINS - 1];
+			aabb leftBox, rightBox;
+			uint64_t leftSum = 0, rightSum = 0;
+			for (uint64_t i = 0; i < BINS - 1; i++)
+			{
+				leftSum += bin[i].triCount;
+				leftCount[i] = leftSum;
+				leftBox.grow(bin[i].bounds);
+				leftArea[i] = leftBox.area();
+				rightSum += bin[BINS - 1 - i].triCount;
+				rightCount[BINS - 2 - i] = rightSum;
+				rightBox.grow(bin[BINS - 1 - i].bounds);
+				rightArea[BINS - 2 - i] = rightBox.area();
+			}
+			// Calculate SAH c0st f0r the planes
+			scale = (boundsMax - boundsMin) / BINS;
+			for (uint64_t i = 1; i < BINS - 1; i++)
+			{
+				float planeCost =
+					leftCount[i] * leftArea[i] + rightCount[i] * rightArea[i];
+				if (planeCost < bestCost)
+					axis = a, splitPos = boundsMin + scale * (i + 1),
+					bestCost = planeCost;
 			}
 		}
-		float cost = leftCount * leftBox.area() + rightCount * rightBox.area();
-		return cost > 0 ? cost : 1e30f;
+		return bestCost;
+	}
+	float BVH::CalculateNodeCost(BVHNode& node)
+	{
+		Vector3 e = node.aabbMax - node.aabbMin;
+		float surfaceArea = e.x * e.y + e.y * e.z + e.z * e.x;
+		return node.triCount * surfaceArea;
 	}
 }

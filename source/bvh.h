@@ -1,6 +1,8 @@
 #pragma once
 #include "DataTypes.h"
 
+#define BINS 8
+
 namespace dae
 {
 	struct BVHNode
@@ -30,12 +32,15 @@ namespace dae
 	{
 		Vector3 bmin = { 1e30f, 1e30f, 1e30f }, bmax = {-1e30f, -1e30f, -1e30f};
 		void grow(Vector3 p) { bmin = Vector3::Min(bmin, p), bmax = Vector3::Max(bmax, p); }
+		void grow(aabb& b) { if (b.bmin.x != 1e30f) { grow(b.bmin); grow(b.bmax); } }
 		float area()
 		{
 			Vector3 e = bmax = bmin;
 			return e.x * e.y + e.y * e.z + e.z * e.x;
 		}
 	};
+
+	struct Bin { aabb bounds; uint64_t triCount = 0; };
 
 	class BVH
 	{
@@ -44,8 +49,8 @@ namespace dae
 		BVH(TriangleMesh* mesh);
 
 		void Build();
-		void IntersectBVH(const Ray& ray, HitRecord& hitRecord, bool ignoreHitRecord = false, uint64_t nodeIdx = 0);
-		void UpdateAllNodeBounds(uint64_t nodeIdx);
+		void Intersect(const Ray& ray, HitRecord& hitRecord, bool ignoreHitRecord = false, uint64_t nodeIdx = 0);
+		void Refit();
 
 		std::vector<BVHNode> m_Nodes;
 		std::vector<uint64_t> m_TriIdx;
@@ -55,7 +60,8 @@ namespace dae
 	private:
 		void Subdivide(uint64_t nodeIdx);
 		void UpdateNodeBounds(uint64_t nodeIdx);
-		float EvaluateSAH(BVHNode& node, uint8_t axis, float pos);
+		float FindBestSplitPlane(BVHNode& node, uint8_t& axis, float& splitPos);
+		float CalculateNodeCost(BVHNode& node);
 		uint64_t m_TriCount;
 	};
 }
