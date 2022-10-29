@@ -67,6 +67,8 @@ namespace dae
 		UpdateNodeBounds(0);
 		Subdivide(0);
 
+		std::cout << "Triangle count: " << m_TriCount << "\n";
+
 		auto end = high_resolution_clock::now();
 		auto elapsedSeconds = duration_cast<microseconds>(end - start);
 		std::cout << "Finished building BVH.\tElapsed time: " << elapsedSeconds.count() << "ms\n";

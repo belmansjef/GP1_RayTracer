@@ -459,4 +459,61 @@ namespace dae {
 #endif
 	}
 #pragma endregion
+
+#pragma region Formula_1
+	void Scene_Formula1::Initialize()
+	{
+		sceneName = "Formula 1 Scene";
+		m_Camera.origin = { 0.f, 2.f, -15.f };
+		m_Camera.fovAngle = 65.f;
+		m_Camera.CalculateFov();
+
+		const auto matLambert_GrayBlue = AddMaterial(new Material_Lambert({ .49f, .57f, .57f }, 1.f));
+		const auto matLambert_White = AddMaterial(new Material_Lambert(colors::White, 1.f));
+
+		//Plane
+		// AddPlane(Vector3{ 0.f, 0.f, 20.f }, Vector3{ 0.f, 0.f, -1.f }, matLambert_GrayBlue);; //Back
+		AddPlane(Vector3{ 0.f, 0.f, 0.f }, Vector3{ 0.f, 1.f, 0.f }, matLambert_GrayBlue);; //Bottom
+		// AddPlane(Vector3{ 0.f, 25.f, 0.f }, Vector3{ 0.f, -1.f, 0.f }, matLambert_GrayBlue);; //Top
+		// AddPlane(Vector3{ 20.f, 0.f, 0.f }, Vector3{ -1.f, 0.f, 0.f }, matLambert_GrayBlue);; //Right
+		// AddPlane(Vector3{ -20.f, 0.f, 0.f }, Vector3{ 1.f, 0.f, 0.f }, matLambert_GrayBlue);; //Left
+
+		m_F1Car = AddTriangleMesh(TriangleCullMode::BackFaceCulling, matLambert_White);
+		Utils::ParseOBJ("Resources/F1.obj",
+			m_F1Car->positions,
+			m_F1Car->normals,
+			m_F1Car->indices);
+
+		m_F1Car->RotateY(-45.f * TO_RADIANS);
+		m_F1Car->Translate({ 2.f, 0.f, 0.f });
+#ifndef USE_BVH
+		m_F1Car->UpdateAABB();
+#endif // !USE_BVH
+		m_F1Car->UpdateTransforms();
+
+#ifdef USE_BVH
+		m_pBVH.push_back(new BVH(*m_F1Car));
+#endif // USE_BVH
+
+		//Light
+		AddPointLight(Vector3{ 2.5f, 10.f, -2.f }, 150.f, ColorRGB{ 0.65f, 0.45f, .45f });
+		AddPointLight(Vector3{ -13.f, 5.f, -5.f }, 70.f, ColorRGB{ 1.f, 0.8f, .45f });
+		AddPointLight(Vector3{ 12.f, 5.f, -3.f }, 50.f, ColorRGB{ .34f, 0.47f, .68f });
+	}
+
+	void Scene_Formula1::Update(Timer* pTimer)
+	{
+		Scene::Update(pTimer);
+
+//		const auto yawAngle = (cos(pTimer->GetTotal()) + 1.f) / 2.f * PI_2;
+//		m_F1Car->RotateY(yawAngle);
+//		m_F1Car->UpdateTransforms();
+//#ifdef USE_BVH
+//		for (const auto& bvh : m_pBVH)
+//		{
+//			bvh->Refit();
+//		}
+//#endif
+	}
+#pragma endregion
 }

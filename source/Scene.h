@@ -162,4 +162,22 @@ namespace dae
 	private:
 		TriangleMesh* m_Bunny{};
 	};
+
+	class Scene_Formula1 final : public Scene
+	{
+	public:
+		Scene_Formula1() = default;
+		~Scene_Formula1() override = default;
+
+		Scene_Formula1(const Scene_Formula1&) = delete;
+		Scene_Formula1(Scene_Formula1&&) noexcept = delete;
+		Scene_Formula1& operator=(const Scene_Formula1&) = delete;
+		Scene_Formula1& operator=(Scene_Formula1&&) noexcept = delete;
+
+		void Initialize() override;
+		void Update(Timer* pTimer) override;
+
+	private:
+		TriangleMesh* m_F1Car{};
+	};
 }
