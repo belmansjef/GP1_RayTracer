@@ -25,15 +25,15 @@ namespace dae {
 		}
 
 		m_Materials.clear();
-		for (auto& pBVH : m_pBVH)
+		for (auto& bvh : m_pBVH)
 		{
-			delete pBVH;
-			pBVH = nullptr;
+			delete bvh;
+			bvh = nullptr;
 		}
 		m_pBVH.clear();
 	}
 
-	void dae::Scene::GetClosestHit(const Ray& ray, HitRecord& closestHit) const
+	void dae::Scene::GetClosestHit(Ray& ray, HitRecord& closestHit) const
 	{
 		for (const Sphere& sphere: m_SphereGeometries)
 		{
@@ -57,7 +57,7 @@ namespace dae {
 #endif // USE_BVH
 	}
 
-	bool Scene::DoesHit(const Ray& ray) const
+	bool Scene::DoesHit(Ray& ray) const
 	{
 	
 		for (const Sphere& sphere: m_SphereGeometries)
@@ -449,14 +449,20 @@ namespace dae {
 		Scene::Update(pTimer);
 
 		const auto yawAngle = (cos(pTimer->GetTotal()) + 1.f) / 2.f * PI_2;
+
+		/*Matrix translation = Matrix::CreateRotationY(yawAngle);
+		m_pBVH[0]->SetTransform(translation);*/
+
 		m_Bunny->RotateY(yawAngle);
 		m_Bunny->UpdateTransforms();
 #ifdef USE_BVH
-		for (const auto& bvh : m_pBVH)
+		for (auto& bvh : m_pBVH)
 		{
+			/*delete bvh;
+			bvh = new BVH(*m_Bunny);*/
 			bvh->Refit();
 		}
-#endif
+ #endif
 	}
 #pragma endregion
 
@@ -472,11 +478,7 @@ namespace dae {
 		const auto matLambert_White = AddMaterial(new Material_Lambert(colors::White, 1.f));
 
 		//Plane
-		// AddPlane(Vector3{ 0.f, 0.f, 20.f }, Vector3{ 0.f, 0.f, -1.f }, matLambert_GrayBlue);; //Back
 		AddPlane(Vector3{ 0.f, 0.f, 0.f }, Vector3{ 0.f, 1.f, 0.f }, matLambert_GrayBlue);; //Bottom
-		// AddPlane(Vector3{ 0.f, 25.f, 0.f }, Vector3{ 0.f, -1.f, 0.f }, matLambert_GrayBlue);; //Top
-		// AddPlane(Vector3{ 20.f, 0.f, 0.f }, Vector3{ -1.f, 0.f, 0.f }, matLambert_GrayBlue);; //Right
-		// AddPlane(Vector3{ -20.f, 0.f, 0.f }, Vector3{ 1.f, 0.f, 0.f }, matLambert_GrayBlue);; //Left
 
 		m_F1Car = AddTriangleMesh(TriangleCullMode::BackFaceCulling, matLambert_White);
 		Utils::ParseOBJ("Resources/F1.obj",
@@ -484,8 +486,8 @@ namespace dae {
 			m_F1Car->normals,
 			m_F1Car->indices);
 
-		/*m_F1Car->RotateY(-45.f * TO_RADIANS);
-		m_F1Car->Translate({ 2.f, 0.f, 0.f });*/
+		m_F1Car->RotateY(-45.f * TO_RADIANS);
+		m_F1Car->Translate({ 2.f, 0.f, 0.f });
 #ifndef USE_BVH
 		m_F1Car->UpdateAABB();
 #endif // !USE_BVH
@@ -504,16 +506,6 @@ namespace dae {
 	void Scene_Formula1::Update(Timer* pTimer)
 	{
 		Scene::Update(pTimer);
-
-		const auto yawAngle = (cos(pTimer->GetTotal()) + 1.f) / 2.f * PI_2;
-		m_F1Car->Translate({ yawAngle, 0.f, 0.f });
-		m_F1Car->UpdateTransforms();
-#ifdef USE_BVH
-		for (auto& bvh : m_pBVH)
-		{
-			bvh->Refit();
-		}
-#endif
 	}
 #pragma endregion
 }

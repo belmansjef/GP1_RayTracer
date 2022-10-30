@@ -1,13 +1,14 @@
 #pragma once
 #include "DataTypes.h"
 
-#define BINS 8
+#define BINS 4
 
 namespace dae
 {
 	struct BVHNode
 	{
 		BVHNode(){};
+		~BVHNode() = default;
 		
 		union { struct { Vector3 aabbMin; uint64_t leftFirst; }; __m128 aabbMin4; };
 		union { struct { Vector3 aabbMax; uint64_t triCount; }; __m128 aabbMax4; };
@@ -31,14 +32,15 @@ namespace dae
 		}
 	};
 
-	class BVH
+	class BVH final
 	{
 	public:
 		BVH() = default;
 		BVH(TriangleMesh& mesh);
+		~BVH();
 
 		void Build();
-		void Intersect(const Ray& ray, HitRecord& hitRecord, bool ignoreHitRecord = false, uint64_t nodeIdx = 0);
+		void Intersect(Ray& ray, HitRecord& hitRecord, bool ignoreHitRecord = false, uint64_t nodeIdx = 0);
 		void Refit();
 		void SetTransform(Matrix& transform);
 

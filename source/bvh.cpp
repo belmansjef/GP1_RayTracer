@@ -52,9 +52,17 @@ namespace dae
 		m_TriIdx = new uint64_t[m_TriCount];
 		m_Triangles = &mesh.triangles[0];
 		for (int i = 0; i < m_TriCount; i++) m_TriIdx[i] = i;
-		m_Nodes = (BVHNode*)_aligned_malloc(sizeof(BVHNode) * m_TriCount * 2, 64);
 
 		Build();
+	}
+
+	BVH::~BVH()
+	{
+		delete[] m_Nodes;
+		delete[] m_TriIdx;
+
+		m_Nodes = nullptr;
+		m_TriIdx = nullptr;
 	}
 
 	void BVH::Build()
@@ -67,15 +75,19 @@ namespace dae
 		UpdateNodeBounds(0);
 		Subdivide(0);
 
-		std::cout << "Triangle count: " << m_TriCount << "\n";
-
-		auto end = high_resolution_clock::now();
+		// std::cout << "Triangle count: " << m_TriCount << "\n";
+		/*auto end = high_resolution_clock::now();
 		auto elapsedSeconds = duration_cast<microseconds>(end - start);
-		std::cout << "Finished building BVH.\tElapsed time: " << elapsedSeconds.count() << "ms\n";
+		std::cout << "Finished building BVH.\tElapsed time: " << elapsedSeconds.count() << "ms\n";*/
 	}
 
-	void BVH::Intersect(const Ray& ray, HitRecord& hitRecord, bool ignoreHitRecord, uint64_t nodeIdx)
+	void BVH::Intersect(Ray& ray, HitRecord& hitRecord, bool ignoreHitRecord, uint64_t nodeIdx)
 	{
+		Ray originalRay = ray;
+		ray.origin = invTransform.TransformPoint(ray.origin);
+		ray.direction = invTransform.TransformVector(ray.direction);
+		ray.rD = Vector3::Reciprocal(ray.direction);
+		
 		BVHNode* node = &m_Nodes[0], *stack[64];
 		uint8_t stackPtr = 0;
 		while (1)
@@ -119,6 +131,8 @@ namespace dae
 				if (dist2 != 1e30f) stack[stackPtr++] = child2;
 			}
 		}
+		
+		ray = originalRay;
 	}
 
 	void BVH::Refit()
@@ -143,6 +157,7 @@ namespace dae
 	void BVH::SetTransform(Matrix& transform)
 	{
 		invTransform = transform.Inverted();
+
 		// calculate world-space bounds using the new matrix
 		Vector3 bmin = m_Nodes[0].aabbMin, bmax = m_Nodes[0].aabbMax;
 		bounds = aabb();
@@ -150,8 +165,7 @@ namespace dae
 		{
 			Vector3 position{ i & 1 ? bmax.x : bmin.x, i & 2 ? bmax.y : bmin.y, i & 4 ? bmax.z : bmin.z };
 			bounds.grow(transform.TransformPoint(position));
-		}
-			
+		}	
 	}
 
 	void BVH::Subdivide(uint64_t nodeIdx)

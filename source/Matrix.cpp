@@ -4,6 +4,7 @@
 
 #include "MathHelpers.h"
 #include <cmath>
+#include <Eigen/Dense>
 
 namespace dae {
 	Matrix::Matrix(const Vector3& xAxis, const Vector3& yAxis, const Vector3& zAxis, const Vector3& t) :
@@ -104,21 +105,24 @@ namespace dae {
 
 	Matrix Matrix::Inverted() const
 	{
-		Matrix inverted;
-		float determinant{0};
-		for (int i = 0; i < 3; i++)
+		Eigen::Matrix4f inverse
 		{
-			determinant += (data[0][i] * (data[1][(i + 1) % 3] * data[2][(i + 2) % 3] - data[1][(i + 2) % 3] * data[2][(i + 1) % 3]));
-		}
-		for (int i = 0; i < 3; i++)
-		{
-			for (int j = 0; j < 3; j++)
-			{
-				inverted[i][j] = ((data[(j + 1) % 3][(i + 1) % 3] * data[(j + 2) % 3][(i + 2) % 3]) - (data[(j + 1) % 3][(i + 2) % 3] * data[(j + 2) % 3][(i + 1) % 3])) / determinant;
-			}
-		}
+			{data[0][0], data[0][1], data[0][2], data[0][3]},
+			{data[1][0], data[1][1], data[1][2], data[1][3]},
+			{data[2][0], data[2][1], data[2][2], data[2][3]},
+			{data[3][0], data[3][1], data[3][2], data[3][3]},
+		};
 
-		return inverted;
+		inverse = inverse.inverse().eval();
+
+		Matrix result
+		{
+			{inverse.row(0)[0], inverse.row(0)[1], inverse.row(0)[2], inverse.row(0)[3]},
+			{inverse.row(1)[0], inverse.row(1)[1], inverse.row(1)[2], inverse.row(1)[3]},
+			{inverse.row(2)[0], inverse.row(2)[1], inverse.row(2)[2], inverse.row(2)[3]},
+			{inverse.row(3)[0], inverse.row(3)[1], inverse.row(3)[2], inverse.row(3)[3]}
+		};
+		return result;
 	}
 
 	Matrix Matrix::CreateTranslation(float x, float y, float z)
