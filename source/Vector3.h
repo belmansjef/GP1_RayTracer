@@ -1,4 +1,5 @@
 #pragma once
+#include <mmintrin.h>
 
 namespace dae
 {

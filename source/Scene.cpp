@@ -484,8 +484,8 @@ namespace dae {
 			m_F1Car->normals,
 			m_F1Car->indices);
 
-		m_F1Car->RotateY(-45.f * TO_RADIANS);
-		m_F1Car->Translate({ 2.f, 0.f, 0.f });
+		/*m_F1Car->RotateY(-45.f * TO_RADIANS);
+		m_F1Car->Translate({ 2.f, 0.f, 0.f });*/
 #ifndef USE_BVH
 		m_F1Car->UpdateAABB();
 #endif // !USE_BVH
@@ -505,15 +505,15 @@ namespace dae {
 	{
 		Scene::Update(pTimer);
 
-//		const auto yawAngle = (cos(pTimer->GetTotal()) + 1.f) / 2.f * PI_2;
-//		m_F1Car->RotateY(yawAngle);
-//		m_F1Car->UpdateTransforms();
-//#ifdef USE_BVH
-//		for (const auto& bvh : m_pBVH)
-//		{
-//			bvh->Refit();
-//		}
-//#endif
+		const auto yawAngle = (cos(pTimer->GetTotal()) + 1.f) / 2.f * PI_2;
+		m_F1Car->Translate({ yawAngle, 0.f, 0.f });
+		m_F1Car->UpdateTransforms();
+#ifdef USE_BVH
+		for (auto& bvh : m_pBVH)
+		{
+			bvh->Refit();
+		}
+#endif
 	}
 #pragma endregion
 }

@@ -1,7 +1,7 @@
 #pragma once
 #include "DataTypes.h"
 
-#define BINS 4
+#define BINS 8
 
 namespace dae
 {
