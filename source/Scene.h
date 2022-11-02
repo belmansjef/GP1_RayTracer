@@ -142,7 +142,7 @@ namespace dae
 		void Update(Timer* pTimer) override;
 
 	private:
-		TriangleMesh* m_Meshes[3]{};
+		TriangleMesh* m_Triangles[3]{};
 	};
 
 	class Scene_W4_BunnyScene final : public Scene

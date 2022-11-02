@@ -46,7 +46,7 @@ namespace dae
 #endif // USE_SSE
 
 	BVH::BVH(TriangleMesh& mesh)
-		: m_TriCount{ (uint64_t)(mesh.triangles.size()) }
+		: m_TriCount{ (mesh.normals.size()) }
 	{
 		m_Nodes = new BVHNode[m_TriCount * 2 - 1];
 		m_TriIdx = new uint64_t[m_TriCount];

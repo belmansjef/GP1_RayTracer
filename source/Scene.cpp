@@ -344,32 +344,32 @@ namespace dae {
 
 		const Triangle baseTriangle = { Vector3(-.75f, 1.5f, 0.f), Vector3(0.75f, 0.f, 0.f), Vector3(-.75f, 0.f, 0.f)};
 
-		m_Meshes[0] = AddTriangleMesh(TriangleCullMode::BackFaceCulling, matLambert_White);
-		m_Meshes[0]->AppendTriangle(baseTriangle, true);
-		m_Meshes[0]->Translate({ -1.75f, 4.5f, 0.f });
+		m_Triangles[0] = AddTriangleMesh(TriangleCullMode::BackFaceCulling, matLambert_White);
+		m_Triangles[0]->AppendTriangle(baseTriangle, true);
+		m_Triangles[0]->Translate({ -1.75f, 4.5f, 0.f });
 #ifndef USE_BVH
-		m_Meshes[0]->UpdateAABB();
+		m_Triangles[0]->UpdateAABB();
 #endif // !USE_BVH
-		m_Meshes[0]->UpdateTransforms();
+		m_Triangles[0]->UpdateTransforms();
 
-		m_Meshes[1] = AddTriangleMesh(TriangleCullMode::FrontFaceCulling, matLambert_White);
-		m_Meshes[1]->AppendTriangle(baseTriangle, true);
-		m_Meshes[1]->Translate({ 0.f, 4.5f, 0.f });
+		m_Triangles[1] = AddTriangleMesh(TriangleCullMode::FrontFaceCulling, matLambert_White);
+		m_Triangles[1]->AppendTriangle(baseTriangle, true);
+		m_Triangles[1]->Translate({ 0.f, 4.5f, 0.f });
 #ifndef USE_BVH
-		m_Meshes[1]->UpdateAABB();
+		m_Triangles[1]->UpdateAABB();
 #endif // !USE_BVH
-		m_Meshes[1]->UpdateTransforms();
+		m_Triangles[1]->UpdateTransforms();
 
-		m_Meshes[2] = AddTriangleMesh(TriangleCullMode::NoCulling, matLambert_White);
-		m_Meshes[2]->AppendTriangle(baseTriangle, true);
-		m_Meshes[2]->Translate({ 1.75f, 4.5f, 0.f });
+		m_Triangles[2] = AddTriangleMesh(TriangleCullMode::NoCulling, matLambert_White);
+		m_Triangles[2]->AppendTriangle(baseTriangle, true);
+		m_Triangles[2]->Translate({ 1.75f, 4.5f, 0.f });
 #ifndef USE_BVH
-		m_Meshes[2]->UpdateAABB();
+		m_Triangles[2]->UpdateAABB();
 #endif // !USE_BVH
-		m_Meshes[2]->UpdateTransforms();
+		m_Triangles[2]->UpdateTransforms();
 
 #ifdef USE_BVH
-		for (const auto& m : m_Meshes)
+		for (const auto& m : m_Triangles)
 		{
 			m_pBVH.emplace_back(new BVH(*m));
 		}
@@ -387,7 +387,7 @@ namespace dae {
 		Scene::Update(pTimer);
 
 		const auto yawAngle = (cos(pTimer->GetTotal()) + 1.f) / 2.f * PI_2;
-		for (const auto mesh : m_Meshes)
+		for (const auto mesh : m_Triangles)
 		{
 			mesh->RotateY(yawAngle);
 			mesh->UpdateTransforms();
@@ -456,8 +456,6 @@ namespace dae {
 #ifdef USE_BVH
 		for (auto& bvh : m_pBVH)
 		{
-			/*delete bvh;
-			bvh = new BVH(*m_Bunny);*/
 			bvh->Refit();
 		}
  #endif
@@ -485,7 +483,7 @@ namespace dae {
 			m_F1Car->indices);
 
 		m_F1Car->RotateY(-45.f * TO_RADIANS);
-		m_F1Car->Translate({ 2.f, 0.f, 0.f });
+		m_F1Car->Translate({ 2.5f, 0.f, 0.f });
 #ifndef USE_BVH
 		m_F1Car->UpdateAABB();
 #endif // !USE_BVH

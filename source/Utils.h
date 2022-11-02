@@ -7,6 +7,7 @@
 #define Geometric
 #define Analytic
 #define Moller
+// #define USE_VECTOR
 
 namespace dae
 {
@@ -227,32 +228,13 @@ namespace dae
 		{
 			if (!SlabTest(mesh.transformedMinAABB, mesh.transformedMaxAABB, ray)) return false;
 
-			int normalIndex{ 0 };
-			Triangle triangle{};
-
 			for (uint64_t index = 0; index < mesh.indices.size(); index += 3)
 			{
-				uint32_t i0 = mesh.indices[index];
-				uint32_t i1 = mesh.indices[index + 1];
-				uint32_t i2 = mesh.indices[index + 2];
-
-				triangle =
+				if (GeometryUtils::HitTest_Triangle(mesh.triangles[index], ray, hitRecord, ignoreHitRecord))
 				{
-					mesh.transformedPositions[i0],
-					mesh.transformedPositions[i1],
-					mesh.transformedPositions[i2],
-					mesh.transformedNormals[normalIndex++]
-				};
-
-				triangle.cullMode = mesh.cullMode;
-				triangle.materialIndex = mesh.materialIndex;
-
-				if (GeometryUtils::HitTest_Triangle(triangle, ray, hitRecord, ignoreHitRecord))
-				{
-					if(ignoreHitRecord) return true;
+					if (ignoreHitRecord) return true;
 				}
 			}
-
 			return hitRecord.didHit;
 		}
 
@@ -296,6 +278,7 @@ namespace dae
 		//Just parses vertices and indices
 #pragma warning(push)
 #pragma warning(disable : 4505) //Warning unreferenced local function
+#pragma warning(disable : 6386) //Warning buffer overrun
 		static bool ParseOBJ(const std::string& filename, std::vector<Vector3>& positions, std::vector<Vector3>& normals, std::vector<int>& indices)
 		{
 			std::ifstream file(filename);

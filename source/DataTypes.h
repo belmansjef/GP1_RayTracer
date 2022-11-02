@@ -64,8 +64,8 @@ namespace dae
 	struct TriangleMesh
 	{
 		TriangleMesh() = default;
-		TriangleMesh(const std::vector<Vector3>& _positions, const std::vector<int>& _indices, TriangleCullMode _cullMode):
-		positions(_positions), indices(_indices), cullMode(_cullMode)
+		TriangleMesh(const std::vector<Vector3>& _positions, const std::vector<int>& _indices, TriangleCullMode _cullMode) :
+			positions(_positions), indices(_indices), cullMode(_cullMode)
 		{
 			//Calculate Normals
 			CalculateNormals();
@@ -80,10 +80,15 @@ namespace dae
 			UpdateTransforms();
 		}
 
+	
 		std::vector<Vector3> positions{};
 		std::vector<Vector3> normals{};
 		std::vector<int> indices{};
 		std::vector<Triangle> triangles{};
+
+		std::vector<Vector3> transformedPositions{};
+		std::vector<Vector3> transformedNormals{};
+
 		unsigned char materialIndex{};
 
 		TriangleCullMode cullMode{TriangleCullMode::BackFaceCulling};
@@ -97,9 +102,6 @@ namespace dae
 
 		Vector3 transformedMinAABB;
 		Vector3 transformedMaxAABB;
-
-		std::vector<Vector3> transformedPositions{};
-		std::vector<Vector3> transformedNormals{};
 
 		void UpdateTriangles() 
 		{
@@ -122,6 +124,7 @@ namespace dae
 				triangle.materialIndex = materialIndex;
 				triangles.emplace_back(triangle);
 			}
+			
 		}
 
 		void UpdateAABB()
@@ -207,7 +210,7 @@ namespace dae
 			triangles.emplace_back(triangle);
 
 			//Not ideal, but making sure all vertices are updated
-			if(!ignoreTransformUpdate)
+			if (!ignoreTransformUpdate)
 				UpdateTransforms();
 		}
 
@@ -230,7 +233,6 @@ namespace dae
 		void UpdateTransforms()
 		{
 			const Matrix finalTransform = scaleTransform * rotationTransform * translationTransform;
-
 			transformedPositions.clear();
 			transformedPositions.reserve(positions.size());
 			for (const auto pos : positions)
@@ -238,16 +240,16 @@ namespace dae
 				transformedPositions.emplace_back(finalTransform.TransformPoint(pos));
 			}
 
-#ifndef USE_BVH
-			UpdateTransformedAABB(finalTransform);
-#endif // !USE_BVH
-
 			transformedNormals.clear();
 			transformedNormals.reserve(normals.size());
 			for (const auto normal : normals)
 			{
 				transformedNormals.emplace_back(finalTransform.TransformVector(normal));
 			}
+
+#ifndef USE_BVH
+			UpdateTransformedAABB(finalTransform);
+#endif // !USE_BVH
 
 			UpdateTriangles();
 		}
