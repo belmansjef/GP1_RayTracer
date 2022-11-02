@@ -15,20 +15,20 @@ namespace dae
 #pragma region SlabTest
 		inline bool SlabTest(const Vector3& minAABB, const Vector3& maxABBB, const Ray& ray)
 		{
-			float tx1 = (minAABB.x - ray.origin.x) / ray.direction.x;
-			float tx2 = (maxABBB.x - ray.origin.x) / ray.direction.x;
+			float tx1 = (minAABB.x - ray.origin.x) * ray.rD.x;
+			float tx2 = (maxABBB.x - ray.origin.x) * ray.rD.x;
 
 			float tmin = std::min(tx1, tx2);
 			float tmax = std::max(tx1, tx2);
 
-			float ty1 = (minAABB.y - ray.origin.y) / ray.direction.y;
-			float ty2 = (maxABBB.y - ray.origin.y) / ray.direction.y;
+			float ty1 = (minAABB.y - ray.origin.y) * ray.rD.y;
+			float ty2 = (maxABBB.y - ray.origin.y) * ray.rD.y;
 
 			tmin = std::max(tmin, std::min(ty1, ty2));
 			tmax = std::min(tmax, std::max(ty1, ty2));
 
-			float tz1 = (minAABB.z - ray.origin.z) / ray.direction.z;
-			float tz2 = (maxABBB.z - ray.origin.z) / ray.direction.z;
+			float tz1 = (minAABB.z - ray.origin.z) * ray.rD.z;
+			float tz2 = (maxABBB.z - ray.origin.z) * ray.rD.z;
 
 			tmin = std::max(tmin, std::min(tz1, tz2));
 			tmax = std::min(tmax, std::max(tz1, tz2));

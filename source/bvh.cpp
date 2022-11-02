@@ -67,7 +67,7 @@ namespace dae
 
 	void BVH::Build()
 	{
-		auto start = high_resolution_clock::now();
+		// auto start = high_resolution_clock::now();
 
 		BVHNode& root = m_Nodes[0];
 		root.leftFirst = 0;

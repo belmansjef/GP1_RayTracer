@@ -230,7 +230,6 @@ namespace dae
 		void UpdateTransforms()
 		{
 			const Matrix finalTransform = scaleTransform * rotationTransform * translationTransform;
-			// const Matrix normalTransform = rotationTransform * translationTransform;
 
 			transformedPositions.clear();
 			transformedPositions.reserve(positions.size());
