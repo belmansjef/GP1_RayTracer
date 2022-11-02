@@ -2,8 +2,6 @@
 #include "Utils.h"
 #include "Material.h"
 
-#define USE_BVH
-
 namespace dae {
 #pragma region Base Scene
 	//Initialize Scene with Default Solid Color Material (RED)

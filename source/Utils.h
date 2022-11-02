@@ -4,7 +4,7 @@
 #include "Math.h"
 #include "DataTypes.h"
 
-// #define Geometric
+#define Geometric
 #define Analytic
 #define Moller
 
@@ -41,6 +41,7 @@ namespace dae
 		inline bool HitTest_Sphere(const Sphere& sphere, const Ray& ray, HitRecord& hitRecord, bool ignoreHitRecord = false)
 		{
 #if defined(Geometric)
+			// https://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes/ray-sphere-intersection
 			const Vector3 L = sphere.origin - ray.origin;
 			const float tca = Vector3::Dot(L, ray.direction);
 			if (tca < 0) return false;
@@ -49,28 +50,24 @@ namespace dae
 			if (d2 > sphere.radius * sphere.radius || d2 < 0) return false;
 
 			const float thc = Sqrt_Intrin(sphere.radius * sphere.radius - d2);
-			float t0 = tca - thc;
-			float t1 = tca + thc;
+			float t = tca - thc;
 
-			if (t0 < 0)
+			if (t < ray.min)
 			{
-				t0 = t1;
-				if (t0 < 0) return false;
+				t = tca + thc;
+				if (t < ray.min) return false;
 			}
 
-			if (t0 >= ray.min && t0 <= ray.max)
-			{
-				if (ignoreHitRecord) return true;
-				const Vector3 intersect{ ray.origin + t0 * ray.direction };
-				hitRecord.didHit = true;
-				hitRecord.origin = intersect;
-				hitRecord.materialIndex = sphere.materialIndex;
-				hitRecord.t = t0;
-				hitRecord.normal = (hitRecord.origin - sphere.origin).Normalized();
-				return true;
-			}
+			if (t > ray.max || hitRecord.t < t) return false;
 
-			return false;
+			if (ignoreHitRecord) return true;
+
+			hitRecord.didHit = true;
+			hitRecord.materialIndex = sphere.materialIndex;
+			hitRecord.origin = ray.origin + ray.direction * t;
+			hitRecord.normal = (hitRecord.origin - sphere.origin).Normalized();
+			hitRecord.t = t;
+			return true;
 #elif defined(Analytic)
 			const Vector3 rayToShpere = ray.origin - sphere.origin;
 			const float B = 2.f * Vector3::Dot(ray.direction, (rayToShpere));
@@ -94,9 +91,9 @@ namespace dae
 
 			hitRecord.didHit = true;
 			hitRecord.materialIndex = sphere.materialIndex;
-			hitRecord.t = t;
 			hitRecord.origin = ray.origin + ray.direction * t;
 			hitRecord.normal = (hitRecord.origin - sphere.origin).Normalized();
+			hitRecord.t = t;
 			return true;
 #endif
 		}
@@ -113,22 +110,16 @@ namespace dae
 		{
 			const float t = (Vector3::Dot((plane.origin - ray.origin), plane.normal)) / Vector3::Dot(ray.direction, plane.normal);
 
-			if (hitRecord.t < t) return false;
+			if (t < ray.min || t > ray.max || hitRecord.t < t) return false;
 
-			if (t <= ray.max && t >= ray.min)
-			{
-				if (ignoreHitRecord) return true;
+			if (ignoreHitRecord) return true;
 
-				hitRecord.didHit = true;
-				hitRecord.materialIndex = plane.materialIndex;
-				hitRecord.t = t;
-				hitRecord.origin = ray.origin + (hitRecord.t * ray.direction);
-				hitRecord.normal = plane.normal.Normalized();
-
-				return true;
-			}
-
-			return false;
+			hitRecord.didHit = true;
+			hitRecord.materialIndex = plane.materialIndex;
+			hitRecord.origin = ray.origin + ray.direction * t;
+			hitRecord.normal = plane.normal.Normalized();
+			hitRecord.t = t;
+			return true;
 		}
 
 		inline bool HitTest_Plane(const Plane& plane, const Ray& ray)
@@ -172,10 +163,10 @@ namespace dae
 			hitRecord.didHit = true;
 			if (ignoreHitRecord) return true;
 
+			hitRecord.materialIndex = triangle.materialIndex;
+			hitRecord.origin = ray.origin + ray.direction * t;
 			hitRecord.normal = triangle.normal;
 			hitRecord.t = t;
-			hitRecord.origin = ray.origin + ray.direction * t;
-			hitRecord.materialIndex = triangle.materialIndex;
 			return true;
 #else // Does not work with BVH
 			// hitRecord.didHit = false;
@@ -283,7 +274,6 @@ namespace dae
 
 		inline ColorRGB GetRadiance(const Light& light, const Vector3& target)
 		{
-			//todo W3
 			ColorRGB radiance{light.color};
 
 			switch (light.type)
