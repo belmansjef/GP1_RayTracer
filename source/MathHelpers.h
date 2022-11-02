@@ -18,7 +18,7 @@ namespace dae
 	{
 		return a * a;
 	}
-	
+	// https://geometrian.com/programming/tutorials/fastsqrt/index.php
 	inline float Sqrt_Intrin(float arg)
 	{
 		return _mm_cvtss_f32(
