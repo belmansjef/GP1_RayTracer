@@ -48,12 +48,20 @@ namespace dae
 	BVH::BVH(TriangleMesh& mesh)
 		: m_TriCount{ (mesh.normals.size()) }
 	{
+		std::cout << "Triangle count: " << m_TriCount << "\n";
+
 		m_Nodes = new BVHNode[m_TriCount * 2 - 1];
 		m_TriIdx = new uint64_t[m_TriCount];
 		m_Triangles = &mesh.triangles[0];
 		for (int i = 0; i < m_TriCount; i++) m_TriIdx[i] = i;
 
+		auto start = high_resolution_clock::now();
+
 		Build();
+
+		auto end = high_resolution_clock::now();
+		auto elapsedSeconds = duration_cast<microseconds>(end - start);
+		std::cout << "Finished building BVH.\tElapsed time: " << elapsedSeconds.count() << "ms\n";
 	}
 
 	BVH::~BVH()
@@ -67,18 +75,11 @@ namespace dae
 
 	void BVH::Build()
 	{
-		// auto start = high_resolution_clock::now();
-
 		BVHNode& root = m_Nodes[0];
 		root.leftFirst = 0;
 		root.triCount = m_TriCount;
 		UpdateNodeBounds(0);
 		Subdivide(0);
-
-		// std::cout << "Triangle count: " << m_TriCount << "\n";
-		/*auto end = high_resolution_clock::now();
-		auto elapsedSeconds = duration_cast<microseconds>(end - start);
-		std::cout << "Finished building BVH.\tElapsed time: " << elapsedSeconds.count() << "ms\n";*/
 	}
 
 	void BVH::Intersect(Ray& ray, HitRecord& hitRecord, bool ignoreHitRecord, uint64_t nodeIdx)

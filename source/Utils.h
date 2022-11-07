@@ -5,15 +5,14 @@
 #include "DataTypes.h"
 
 #define Geometric
-#define Analytic
 #define Moller
-// #define USE_VECTOR
 
 namespace dae
 {
 	namespace GeometryUtils
 	{
 #pragma region SlabTest
+
 		inline bool SlabTest(const Vector3& minAABB, const Vector3& maxABBB, const Ray& ray)
 		{
 			float tx1 = (minAABB.x - ray.origin.x) * ray.rD.x;
@@ -41,8 +40,9 @@ namespace dae
 		//SPHERE HIT-TESTS
 		inline bool HitTest_Sphere(const Sphere& sphere, const Ray& ray, HitRecord& hitRecord, bool ignoreHitRecord = false)
 		{
-#if defined(Geometric)
+#ifdef Geometric
 			// https://www.scratchapixel.com/lessons/3d-basic-rendering/minimal-ray-tracer-rendering-simple-shapes/ray-sphere-intersection
+			
 			const Vector3 L = sphere.origin - ray.origin;
 			const float tca = Vector3::Dot(L, ray.direction);
 			if (tca < 0) return false;
@@ -69,7 +69,7 @@ namespace dae
 			hitRecord.normal = (hitRecord.origin - sphere.origin).Normalized();
 			hitRecord.t = t;
 			return true;
-#elif defined(Analytic)
+#else
 			const Vector3 rayToShpere = ray.origin - sphere.origin;
 			const float B = 2.f * Vector3::Dot(ray.direction, (rayToShpere));
 			const float C = Vector3::Dot(rayToShpere, rayToShpere) - (sphere.radius * sphere.radius);
@@ -228,7 +228,7 @@ namespace dae
 		{
 			if (!SlabTest(mesh.transformedMinAABB, mesh.transformedMaxAABB, ray)) return false;
 
-			for (uint64_t index = 0; index < mesh.indices.size(); index += 3)
+			for (uint64_t index = 0; index < mesh.normals.size(); index++)
 			{
 				if (GeometryUtils::HitTest_Triangle(mesh.triangles[index], ray, hitRecord, ignoreHitRecord))
 				{
