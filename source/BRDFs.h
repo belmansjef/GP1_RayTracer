@@ -34,9 +34,7 @@ namespace dae
 		static ColorRGB Phong(float ks, float exp, const Vector3& l, const Vector3& v, const Vector3& n)
 		{
 			const Vector3 reflect{ Vector3::Reflect(n, l) };
-			float cosAngle{ Vector3::Dot(reflect, v) };
-			if (cosAngle < 0.f) cosAngle = 0.f;
-
+			float cosAngle{ std::max(Vector3::Dot(reflect, v), 0.f) };
 			const float phongSpecular{ ks * powf(cosAngle, exp) };
 			return { phongSpecular, phongSpecular, phongSpecular };
 		}
@@ -50,6 +48,10 @@ namespace dae
 		 */
 		static ColorRGB FresnelFunction_Schlick(const Vector3& h, const Vector3& v, const ColorRGB& f0)
 		{
+			if (f0.r == 0.04f)
+			{
+				return ColorRGB(1.f, 1.f, 1.f) * powf(1.f - Vector3::Dot(h, v), 5.f);
+			}
 			return f0 + ColorRGB(1 - f0.r, 1 - f0.g, 1 - f0.b) * powf(1.f - Vector3::Dot(h, v), 5.f);
 		}
 
@@ -78,9 +80,8 @@ namespace dae
 		 */
 		static float GeometryFunction_SchlickGGX(const Vector3& n, const Vector3& v, float roughness)
 		{
-			float dp{ Vector3::Dot(n, v) };
-			if (dp < 0) dp = 0;
-			const float kdirect{ powf(roughness + 1, 2.f) / 8.f };
+			float dp{ std::max(Vector3::Dot(n, v), 0.f) };
+			const float kdirect{ powf(roughness + 1, 2.f) * 0.125f };
 
 			return dp / (dp * (1 - kdirect) + kdirect);
 		}

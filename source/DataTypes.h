@@ -80,7 +80,6 @@ namespace dae
 			UpdateTransforms();
 		}
 
-	
 		std::vector<Vector3> positions{};
 		std::vector<Vector3> normals{};
 		std::vector<int> indices{};

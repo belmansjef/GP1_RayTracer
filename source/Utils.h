@@ -131,7 +131,6 @@ namespace dae
 #pragma endregion
 #pragma region Triangle HitTest
 		//TRIANGLE HIT-TESTS
-		const float EPSILON = 0.00000000001f;
 		inline bool HitTest_Triangle(const Triangle& triangle, const Ray& ray, HitRecord& hitRecord, bool ignoreHitRecord = false)
 		{
 #ifdef Moller
@@ -144,9 +143,9 @@ namespace dae
 			if (ignoreHitRecord && cullMode != TriangleCullMode::NoCulling)
 				cullMode = TriangleCullMode(((int)cullMode + 1) % 2);
 
-			if (det < EPSILON && cullMode == TriangleCullMode::BackFaceCulling) return false;
-			if (det > EPSILON && cullMode == TriangleCullMode::FrontFaceCulling) return false;
-			if (abs(det) < EPSILON) return false;
+			if (det < FLT_EPSILON && cullMode == TriangleCullMode::BackFaceCulling) return false;
+			if (det > FLT_EPSILON && cullMode == TriangleCullMode::FrontFaceCulling) return false;
+			if (abs(det) < FLT_EPSILON) return false;
 
 			const float invDet = 1 / det;
 
