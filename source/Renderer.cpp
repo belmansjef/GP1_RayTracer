@@ -20,6 +20,7 @@ using namespace dae;
 
 // #define ASYNC
 #define PARALLEL_FOR
+// #define USE_REFLECTIONS
 
 Renderer::Renderer(SDL_Window * pWindow) :
 	m_pWindow(pWindow),
@@ -131,24 +132,67 @@ void dae::Renderer::RenderPixel(Scene* pScene, uint32_t pixelIndex, const Camera
 
 			if ((m_ShadowsEnabled && pScene->DoesHit(lightRay))) continue;
 
-			const float dpObservedArea{ Vector3::Dot(closestHit.normal, lightRay.direction) };
+			
 
 			switch (m_CurrentLightingMode)
 			{
-			case dae::Renderer::LightingMode::ObservedArea:
+			case LightingMode::ObservedArea:
+			{
+				const float dpObservedArea{ Vector3::Dot(closestHit.normal, lightRay.direction) };
 				if (dpObservedArea < 0) continue;
 				finalColor += { dpObservedArea, dpObservedArea, dpObservedArea };
 				break;
-			case dae::Renderer::LightingMode::Radiance:
+			}
+			case LightingMode::Radiance:
+			{
 				finalColor += LightUtils::GetRadiance(light, lightRay.origin);
 				break;
-			case dae::Renderer::LightingMode::BRDF:
+			}
+			case LightingMode::BRDF:
+			{
 				finalColor += materials[closestHit.materialIndex]->Shade(closestHit, lightRay.direction, viewRay.direction);
 				break;
-			case dae::Renderer::LightingMode::Combined:
+			}
+			case LightingMode::Combined:
+			{
+				const float dpObservedArea{ Vector3::Dot(closestHit.normal, lightRay.direction) };
 				if (dpObservedArea < 0) continue;
-				finalColor += LightUtils::GetRadiance(light, lightRay.origin) * materials[closestHit.materialIndex]->Shade(closestHit, lightRay.direction, viewRay.direction) * dpObservedArea;
+				const ColorRGB diffuseColor = LightUtils::GetRadiance(light, lightRay.origin) * materials[closestHit.materialIndex]->Shade(closestHit, lightRay.direction, viewRay.direction) * dpObservedArea;
+				
+#ifdef USE_REFLECTIONS
+				ColorRGB reflectionColor{};
+				if (materials[closestHit.materialIndex]->m_Reflectance > 0.f)
+				{
+					Ray reflectionRay;
+					reflectionRay.direction = Vector3::Reflect(viewRay.direction, closestHit.normal).Normalized();
+					reflectionRay.origin = closestHit.origin + closestHit.normal * 0.01f;
+					reflectionRay.rD = Vector3::Reciprocal(reflectionRay.direction);
+
+					HitRecord reflectionHit{};
+					pScene->GetClosestHit(reflectionRay, reflectionHit);
+					if (reflectionHit.didHit)
+					{
+						Ray reflectionLightRay{};
+						reflectionLightRay.origin = reflectionHit.origin;
+						reflectionLightRay.direction = LightUtils::GetDirectionToLight(light, reflectionLightRay.origin + reflectionHit.normal * 0.01f);
+						reflectionLightRay.min = 0.1f;
+						reflectionLightRay.max = reflectionLightRay.direction.Magnitude();
+						reflectionLightRay.direction.Normalize();
+						reflectionLightRay.rD = Vector3::Reciprocal(reflectionLightRay.direction);
+						const float dpReflectionObservedArea{ Vector3::Dot(reflectionHit.normal, lightRay.direction) };
+						if(dpReflectionObservedArea >= 0)
+							reflectionColor = LightUtils::GetRadiance(light, reflectionLightRay.origin) * materials[reflectionHit.materialIndex]->Shade(reflectionHit, reflectionLightRay.direction, reflectionRay.direction) * dpObservedArea;
+					}
+				}
+				finalColor += diffuseColor * (1.f - materials[closestHit.materialIndex]->m_Reflectance) + reflectionColor * materials[closestHit.materialIndex]->m_Reflectance;
 				break;
+#else
+				finalColor += diffuseColor;
+				break;
+#endif // USE_REFLECTIONS
+				
+			}
+				
 			default:
 				std::cout << "Error getting lighting mode!\n";
 				break;

@@ -16,7 +16,7 @@ namespace dae
 		Material(Material&&) noexcept = delete;
 		Material& operator=(const Material&) = delete;
 		Material& operator=(Material&&) noexcept = delete;
-
+		float m_Reflectance{ 0.0f };
 		/**
 		 * \brief Function used to calculate the correct color for the specific material and its parameters
 		 * \param hitRecord current hitrecord
@@ -99,9 +99,10 @@ namespace dae
 	class Material_CookTorrence final : public Material
 	{
 	public:
-		Material_CookTorrence(const ColorRGB& albedo, float metalness, float roughness):
+		Material_CookTorrence(const ColorRGB& albedo, float metalness, float roughness) :
 			m_Albedo(albedo), m_Metalness(metalness), m_Roughness(roughness)
 		{
+			m_Reflectance = 1 - m_Roughness;
 		}
 
 		ColorRGB Shade(const HitRecord& hitRecord = {}, const Vector3& l = {}, const Vector3& v = {}) override
@@ -131,7 +132,7 @@ namespace dae
 	private:
 		ColorRGB m_Albedo{ .972f, .960f, .915f }; // Silver
 		float m_Metalness{1.0f};
-		float m_Roughness{0.1f}; // [1.0 > 0.0] >> [ROUGH > SMOOTH]
+		float m_Roughness{ 0.1f }; // [1.0 > 0.0] >> [ROUGH > SMOOTH]
 	};
 #pragma endregion
 }

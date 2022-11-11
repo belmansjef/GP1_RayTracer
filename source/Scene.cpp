@@ -472,6 +472,8 @@ namespace dae {
 
 		const auto matLambert_GrayBlue = AddMaterial(new Material_Lambert({ .49f, .57f, .57f }, 1.f));
 		const auto matLambert_White = AddMaterial(new Material_Lambert(colors::White, 1.f));
+		const auto matCT_GraySmoothPlastic = AddMaterial(new Material_CookTorrence({ .75f, .75f, .75f }, 0.f, 0.1f));
+		const auto matCT_GraySemiSmoothPlastic = AddMaterial(new Material_CookTorrence({ .75f, .75f, .75f }, 0.f, 0.5f));
 
 		//Plane
 		AddPlane(Vector3{ 0.f, 0.f, 0.f }, Vector3{ 0.f, 1.f, 0.f }, matLambert_GrayBlue);; //Bottom
@@ -483,7 +485,10 @@ namespace dae {
 			m_F1Car->indices);
 
 		m_F1Car->RotateY(-45.f * TO_RADIANS);
-		m_F1Car->Translate({ 2.5f, 0.f, 0.f });
+		m_F1Car->Translate({ 2.0f, 0.f, 0.f });
+
+		AddSphere(Vector3{ -9.f, 3.f, -1.f }, 2.f, matCT_GraySmoothPlastic);
+		AddSphere(Vector3{ 9.f, 3.f, -1.f }, 2.f, matCT_GraySemiSmoothPlastic);
 #ifndef USE_BVH
 		m_F1Car->UpdateAABB();
 #endif // !USE_BVH

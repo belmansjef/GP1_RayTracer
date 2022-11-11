@@ -54,23 +54,16 @@ namespace dae
 			//Mouse Input
 			int mouseX{}, mouseY{};
 			const uint32_t mouseState = SDL_GetRelativeMouseState(&mouseX, &mouseY);
-			
-			if (abs(mouseX) < EPSILON &&
-				abs(mouseY) < EPSILON &&
-				!pKeyboardState[SDL_SCANCODE_D] &&
-				!pKeyboardState[SDL_SCANCODE_A] &&
-				!pKeyboardState[SDL_SCANCODE_W] &&
-				!pKeyboardState[SDL_SCANCODE_S])
-			{
-				return;
-			}
 
 			const float deltaTime = pTimer->GetElapsed();
 			const float constMoveSpeed = moveSpeed * deltaTime;
 			const float constLookSpeed = lookSpeed * deltaTime;
 
-			origin += (pKeyboardState[SDL_SCANCODE_D] - pKeyboardState[SDL_SCANCODE_A]) * constMoveSpeed * right;
-			origin += (pKeyboardState[SDL_SCANCODE_W] - pKeyboardState[SDL_SCANCODE_S]) * constMoveSpeed * forward;
+			origin += (pKeyboardState[SDL_SCANCODE_D] || pKeyboardState[SDL_SCANCODE_RIGHT]) * constMoveSpeed * right;
+			origin -= (pKeyboardState[SDL_SCANCODE_Q] || pKeyboardState[SDL_SCANCODE_A] || pKeyboardState[SDL_SCANCODE_LEFT]) * constMoveSpeed * right;
+			
+			origin += (pKeyboardState[SDL_SCANCODE_W] || pKeyboardState[SDL_SCANCODE_Z] || pKeyboardState[SDL_SCANCODE_UP]) * constMoveSpeed * forward;
+			origin -= (pKeyboardState[SDL_SCANCODE_S] || pKeyboardState[SDL_SCANCODE_DOWN]) * constMoveSpeed * forward;
 			
 			if (mouseState & SDL_BUTTON_LMASK)
 			{
