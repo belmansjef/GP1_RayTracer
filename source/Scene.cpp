@@ -448,17 +448,17 @@ namespace dae {
 
 		const auto yawAngle = (cos(pTimer->GetTotal()) + 1.f) / 2.f * PI_2;
 
-		/*Matrix translation = Matrix::CreateRotationY(yawAngle);
-		m_pBVH[0]->SetTransform(translation);*/
+		Matrix translation = Matrix::CreateRotationY(yawAngle);
+		m_pBVH[0]->SetTransform(translation);
 
-		m_Bunny->RotateY(yawAngle);
+	/*	m_Bunny->RotateY(yawAngle);
 		m_Bunny->UpdateTransforms();
 #ifdef USE_BVH
 		for (auto& bvh : m_pBVH)
 		{
 			bvh->Refit();
 		}
- #endif
+ #endif*/
 	}
 #pragma endregion
 

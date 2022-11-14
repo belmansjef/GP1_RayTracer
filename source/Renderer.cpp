@@ -132,8 +132,6 @@ void dae::Renderer::RenderPixel(Scene* pScene, uint32_t pixelIndex, const Camera
 
 			if ((m_ShadowsEnabled && pScene->DoesHit(lightRay))) continue;
 
-			
-
 			switch (m_CurrentLightingMode)
 			{
 			case LightingMode::ObservedArea:

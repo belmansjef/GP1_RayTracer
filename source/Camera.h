@@ -101,7 +101,6 @@ namespace dae
 			const Matrix yaw{ Matrix::CreateRotationY(totalYaw) };
 			const Matrix finalRotation{ pitch * yaw };
 			forward = finalRotation.TransformVector(Vector3::UnitZ);
-			forward.Normalize();
 		}
 	};
 }

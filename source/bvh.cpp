@@ -89,6 +89,8 @@ namespace dae
 		ray.direction = invTransform.TransformVector(ray.direction);
 		ray.rD = Vector3::Reciprocal(ray.direction);
 		
+		
+		
 		BVHNode* node = &m_Nodes[0], *stack[64];
 		uint8_t stackPtr = 0;
 		while (1)
